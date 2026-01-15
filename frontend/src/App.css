@@ -1,34 +1,118 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* App-specific styles - minimal, most styling via Tailwind */
+
+.App {
+  min-height: 100vh;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Hero section background */
+.hero-bg {
+  position: relative;
+  overflow: hidden;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.hero-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('https://images.unsplash.com/photo-1578258691902-327e3c08b7e9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwxfHxjYWxtJTIwbmF0dXJlJTIwbGFuZHNjYXBlJTIwZm9nfGVufDB8fHx8MTc2ODQ4MjM2Nnww&ixlib=rb-4.1.0&q=85');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.15;
+  z-index: 0;
 }
 
-.App-link {
-    color: #61dafb;
+/* Chat messages */
+.chat-message-user {
+  background: hsl(var(--primary));
+  color: white;
+  border-radius: 1.5rem 1.5rem 0.25rem 1.5rem;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.chat-message-ai {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  border-radius: 1.5rem 1.5rem 1.5rem 0.25rem;
+}
+
+/* Focus practice backgrounds */
+.focus-flower-bg {
+  background-image: url('https://images.unsplash.com/photo-1746091926647-4dea870bb1eb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHw0fHxibG9vbWluZyUyMGZsb3dlciUyMG1hY3JvJTIwdmlkZW8lMjBzdHlsZXxlbnwwfHx8fDE3Njg0ODIzNjh8MA&ixlib=rb-4.1.0&q=85');
+  background-size: cover;
+  background-position: center;
+}
+
+.focus-zen-bg {
+  background-image: url('https://images.unsplash.com/photo-1668544235747-5a250a6980dd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHwxfHx6ZW4lMjBzdG9uZXMlMjB3YXRlciUyMHJpcHBsZXxlbnwwfHx8fDE3Njg0ODIzNzF8MA&ixlib=rb-4.1.0&q=85');
+  background-size: cover;
+  background-position: center;
+}
+
+.focus-meditation-bg {
+  background-image: url('https://images.unsplash.com/photo-1635178787293-5b80bd07186b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHw0fHxjYWxtJTIwbmF0dXJlJTIwbGFuZHNjYXBlJTIwZm9nfGVufDB8fHx8MTc2ODQ4MjM2Nnww&ixlib=rb-4.1.0&q=85');
+  background-size: cover;
+  background-position: center;
+}
+
+/* Expanding circle animation container */
+.expanding-circle-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.expanding-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.5) 100%);
+}
+
+/* Breath counter animation */
+.breath-circle {
+  transition: all 4s ease-in-out;
+}
+
+.breath-circle.inhale {
+  transform: scale(1.5);
+  background: hsl(var(--primary) / 0.8);
+}
+
+.breath-circle.exhale {
+  transform: scale(1);
+  background: hsl(var(--primary) / 0.4);
+}
+
+/* Page transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Calendar heatmap */
+.heatmap-cell {
+  transition: all 0.2s ease;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.2);
+  z-index: 10;
+}
+
+/* Voice feedback */
+.voice-feedback {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
 }
