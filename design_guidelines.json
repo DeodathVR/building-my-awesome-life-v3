@@ -1,0 +1,141 @@
+{
+  "project_name": "Awesome Life Habits",
+  "design_philosophy": {
+    "identity": "E1: The Anti-AI Designer",
+    "core_concept": "Digital Zen Garden",
+    "fusion_strategy": "Productivity Tools x Botanical Illustration",
+    "emotional_tone": "Serene, Focused, Encouraging, Organic",
+    "key_principles": [
+      "Fusion over Imitation: Mix habit tracking precision with nature's organic flow.",
+      "Emotion First: Every interaction should feel like a deep breath.",
+      "Negative Space: Use whitespace as a luxury element.",
+      "Soft Geometry: No sharp edges; everything is rounded and approachable."
+    ]
+  },
+  "typography": {
+    "font_family_headings": "Playfair Display, serif",
+    "font_family_body": "Manrope, sans-serif",
+    "font_weights": {
+      "headings": "600",
+      "body_regular": "400",
+      "body_bold": "600"
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl tracking-tight leading-tight",
+      "h2": "text-3xl md:text-4xl tracking-tight",
+      "h3": "text-2xl md:text-3xl",
+      "body": "text-base md:text-lg leading-relaxed",
+      "caption": "text-sm tracking-wide uppercase text-muted-foreground"
+    }
+  },
+  "colors": {
+    "palette_name": "Morning Mist & Sage",
+    "theme": "light",
+    "base": {
+      "background": "#F5F7FA",
+      "foreground": "#37474F",
+      "card": "#FFFFFF",
+      "card_foreground": "#37474F"
+    },
+    "primary": {
+      "default": "#4DB6AC",
+      "foreground": "#FFFFFF",
+      "hover": "#26A69A"
+    },
+    "secondary": {
+      "default": "#E0F2F1",
+      "foreground": "#00695C"
+    },
+    "accent": {
+      "default": "#FFD54F",
+      "foreground": "#3E2723"
+    },
+    "muted": {
+      "default": "#ECEFF1",
+      "foreground": "#78909C"
+    },
+    "border": "#CFD8DC",
+    "input": "#CFD8DC",
+    "ring": "#4DB6AC"
+  },
+  "visual_enhancers": {
+    "border_radius": "rounded-2xl",
+    "shadows": {
+      "soft": "0 4px 20px -2px rgba(77, 182, 172, 0.1)",
+      "hover": "0 10px 25px -5px rgba(77, 182, 172, 0.2)",
+      "float": "0 20px 40px -10px rgba(0, 0, 0, 0.05)"
+    },
+    "gradients": {
+      "hero": "linear-gradient(135deg, #E0F2F1 0%, #F5F7FA 100%)",
+      "glass": "linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%)"
+    },
+    "textures": "Subtle grain overlay (opacity 0.03) on backgrounds to reduce digital flatness."
+  },
+  "layout_strategy": {
+    "grid_system": "Bento Grid (Soft Edges)",
+    "spacing": "Generous (p-6, p-8, gap-6)",
+    "container_width": "max-w-6xl mx-auto",
+    "mobile_first": "Stack vertically on mobile, expand to grid on desktop. Touch targets min 44px."
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground rounded-full px-8 py-3 shadow-soft hover:shadow-hover transition-all duration-300 hover:-translate-y-0.5",
+      "secondary": "bg-secondary text-secondary-foreground rounded-full px-6 py-2 hover:bg-secondary/80 transition-colors",
+      "ghost": "hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg px-4 py-2"
+    },
+    "cards": {
+      "habit": "bg-card border border-border/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group relative overflow-hidden",
+      "focus": "bg-card rounded-3xl overflow-hidden shadow-float aspect-[4/5] relative group cursor-pointer"
+    },
+    "inputs": {
+      "default": "bg-white border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+    },
+    "navigation": {
+      "mobile": "fixed bottom-6 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 shadow-float rounded-full p-2 flex justify-around items-center z-50",
+      "desktop": "sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50"
+    }
+  },
+  "motion": {
+    "micro_interactions": {
+      "hover": "scale-[1.02] transition-transform duration-300 ease-out",
+      "click": "scale-[0.98] transition-transform duration-100",
+      "check": "animate-pulse text-primary"
+    },
+    "transitions": {
+      "page_load": "animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out",
+      "stagger": "stagger-children-100"
+    },
+    "special_effects": {
+      "breathing": "animate-[pulse_4s_ease-in-out_infinite]",
+      "float": "animate-[bounce_3s_infinite]"
+    }
+  },
+  "assets": {
+    "icons": "Lucide React (Stroke width 1.5px for elegance)",
+    "images": {
+      "hero_background": "https://images.unsplash.com/photo-1578258691902-327e3c08b7e9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwxfHxjYWxtJTIwbmF0dXJlJTIwbGFuZHNjYXBlJTIwZm9nfGVufDB8fHx8MTc2ODQ4MjM2Nnww&ixlib=rb-4.1.0&q=85",
+      "focus_flower": "https://images.unsplash.com/photo-1746091926647-4dea870bb1eb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHw0fHxibG9vbWluZyUyMGZsb3dlciUyMG1hY3JvJTIwdmlkZW8lMjBzdHlsZXxlbnwwfHx8fDE3Njg0ODIzNjh8MA&ixlib=rb-4.1.0&q=85",
+      "zen_stones": "https://images.unsplash.com/photo-1668544235747-5a250a6980dd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHwxfHx6ZW4lMjBzdG9uZXMlMjB3YXRlciUyMHJpcHBsZXxlbnwwfHx8fDE3Njg0ODIzNzF8MA&ixlib=rb-4.1.0&q=85",
+      "meditation_bg": "https://images.unsplash.com/photo-1635178787293-5b80bd07186b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHw0fHxjYWxtJTIwbmF0dXJlJTIwbGFuZHNjYXBlJTIwZm9nfGVufDB8fHx8MTc2ODQ4MjM2Nnww&ixlib=rb-4.1.0&q=85"
+    }
+  },
+  "instructions_to_main_agent": [
+    "CRITICAL: Do not use standard 'SaaS Blue'. Use the specified 'Sage' and 'Morning Mist' palette.",
+    "Use 'Playfair Display' for all H1-H3 headings to give it a premium, editorial feel.",
+    "Implement the 'Voice Command Center' as a floating action button (FAB) that pulses gently.",
+    "For the 'Focus Practices', use the provided flower/nature images as full-screen backgrounds with a glassmorphism overlay for controls.",
+    "Ensure the 'Habit Tracker' uses soft, rounded checkboxes. When checked, trigger a subtle 'gold' glow animation.",
+    "The 'AI Coach' chat interface should look like a clean messaging app (e.g., iMessage) but with the app's soft color palette.",
+    "Use 'Sonner' for all toast notifications.",
+    "Ensure all interactive elements have 'data-testid' attributes.",
+    "Mobile responsiveness is paramount. Test the 'Voice' button placement on mobile screens."
+  ],
+  "universal_guidelines": [
+    "Avoid generic centered layouts. Use asymmetry where possible.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "Do not apply universal transitions (transition: all).",
+    "Never use AI assistant emojis for icons.",
+    "Every interaction needs micro-animations."
+  ]
+}
