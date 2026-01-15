@@ -447,6 +447,15 @@ const FocusPage = () => {
               </div>
             )}
 
+            {selectedExercise.id === 'daisy-bloom' && (
+              <div className="space-y-6">
+                <h2 className="font-heading text-4xl font-bold drop-shadow-lg text-gray-800">Yellow Daisy Bloom</h2>
+                <p className="text-xl font-light text-gray-700 drop-shadow-sm">
+                  {selectedExercise.instructions}
+                </p>
+              </div>
+            )}
+
             {selectedExercise.id === 'expanding-circle' && (
               <div className="space-y-8">
                 {/* Breathing Circle */}
