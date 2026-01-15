@@ -62,6 +62,7 @@ const Navigation = () => {
               size="icon"
               onClick={() => setDarkMode(!darkMode)}
               data-testid="dark-mode-toggle"
+              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
               className="rounded-xl"
             >
               {darkMode ? (
