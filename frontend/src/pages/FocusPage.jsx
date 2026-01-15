@@ -167,6 +167,16 @@ const exercises = [
     bgClass: 'focus-meditation-bg',
     duration: 240, // 4 minutes
     instructions: 'Follow the rhythm: Inhale 4s → Hold 3s → Exhale 6s'
+  },
+  {
+    id: 'daisy-bloom',
+    name: 'Yellow Daisy Bloom',
+    description: 'Watch a vibrant yellow-orange daisy bloom slowly, petal by petal. An uplifting alternative for focus training.',
+    icon: Sun,
+    duration: 300, // 5 minutes
+    instructions: 'Sit comfortably, breathe deeply, and observe the gentle unfolding. If your mind wanders, gently return your attention.',
+    isAnimated: true,
+    thumbnailGradient: 'from-yellow-400 via-orange-400 to-orange-500'
   }
 ];
 
