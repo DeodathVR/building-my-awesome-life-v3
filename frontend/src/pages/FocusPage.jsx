@@ -8,82 +8,88 @@ import { toast } from 'sonner';
 // Animated Daisy Bloom Component - CSS-based flower animation
 const AnimatedDaisyBloom = ({ isPlaying }) => {
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100">
+    <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-b from-slate-50 via-slate-100 to-green-50/30 overflow-hidden">
       {/* Stem */}
       <div 
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 bg-gradient-to-t from-green-700 to-green-500 rounded-full origin-bottom"
+        className="absolute bottom-[10%] left-1/2 -translate-x-1/2 w-4 bg-gradient-to-t from-green-700 via-green-600 to-green-500 rounded-full origin-bottom"
         style={{
-          height: isPlaying ? '35%' : '10%',
-          transition: 'height 8s ease-out'
+          height: isPlaying ? '45%' : '5%',
+          transition: 'height 6s ease-out'
         }}
       />
       
       {/* Leaves */}
       <div 
-        className="absolute bottom-[20%] left-1/2 origin-bottom-left"
+        className="absolute bottom-[30%] left-1/2 origin-bottom-left"
         style={{
-          transform: isPlaying ? 'translateX(-50%) rotate(-45deg) scale(1)' : 'translateX(-50%) rotate(-45deg) scale(0)',
-          transition: 'transform 6s ease-out 4s'
+          transform: isPlaying ? 'translateX(-100%) rotate(-35deg) scale(1)' : 'translateX(-100%) rotate(-35deg) scale(0)',
+          transition: 'transform 4s ease-out 3s'
         }}
       >
-        <div className="w-8 h-16 bg-gradient-to-t from-green-600 to-green-400 rounded-full" />
+        <div className="w-10 h-20 bg-gradient-to-t from-green-600 to-green-400 rounded-[50%]" 
+          style={{ boxShadow: 'inset 2px 0 8px rgba(0,0,0,0.1)' }}
+        />
       </div>
       <div 
-        className="absolute bottom-[25%] left-1/2 origin-bottom-right"
+        className="absolute bottom-[35%] left-1/2 origin-bottom-right"
         style={{
-          transform: isPlaying ? 'translateX(-50%) rotate(45deg) scale(1)' : 'translateX(-50%) rotate(45deg) scale(0)',
-          transition: 'transform 6s ease-out 5s'
+          transform: isPlaying ? 'translateX(0%) rotate(35deg) scale(1)' : 'translateX(0%) rotate(35deg) scale(0)',
+          transition: 'transform 4s ease-out 4s'
         }}
       >
-        <div className="w-8 h-14 bg-gradient-to-t from-green-600 to-green-400 rounded-full" />
+        <div className="w-10 h-18 bg-gradient-to-t from-green-600 to-green-400 rounded-[50%]"
+          style={{ boxShadow: 'inset -2px 0 8px rgba(0,0,0,0.1)' }}
+        />
       </div>
 
-      {/* Flower head container */}
+      {/* Flower head container - positioned in upper area */}
       <div 
-        className="absolute top-[15%] left-1/2 -translate-x-1/2"
+        className="absolute top-[18%] left-1/2 -translate-x-1/2"
         style={{
           opacity: isPlaying ? 1 : 0,
-          transform: isPlaying ? 'translateX(-50%) scale(1)' : 'translateX(-50%) scale(0.3)',
-          transition: 'all 10s ease-out 6s'
+          transform: isPlaying ? 'translateX(-50%) scale(1)' : 'translateX(-50%) scale(0.2)',
+          transition: 'all 8s ease-out 5s'
         }}
       >
-        {/* Outer petals layer */}
-        {[...Array(12)].map((_, i) => (
+        {/* Outer petals layer - 14 petals */}
+        {[...Array(14)].map((_, i) => (
           <div
             key={`outer-${i}`}
             className="absolute left-1/2 top-1/2 origin-bottom"
             style={{
-              transform: `translate(-50%, -100%) rotate(${i * 30}deg)`,
+              transform: `translate(-50%, -100%) rotate(${i * (360/14)}deg)`,
             }}
           >
             <div
-              className="w-6 h-20 rounded-full bg-gradient-to-t from-orange-500 via-yellow-400 to-yellow-300"
+              className="w-8 h-28 rounded-[50%]"
               style={{
-                transform: isPlaying ? 'scaleY(1) scaleX(1)' : 'scaleY(0) scaleX(0.5)',
+                background: 'linear-gradient(to top, #ea580c, #f97316, #fbbf24, #fde047)',
+                transform: isPlaying ? 'scaleY(1) scaleX(1)' : 'scaleY(0) scaleX(0.3)',
                 transformOrigin: 'bottom center',
-                transition: `transform ${12 + i * 0.5}s ease-out ${8 + i * 0.3}s`,
-                boxShadow: 'inset 0 -10px 20px rgba(234, 88, 12, 0.3)'
+                transition: `transform ${10 + i * 0.3}s ease-out ${6 + i * 0.2}s`,
+                boxShadow: 'inset 0 -15px 30px rgba(234, 88, 12, 0.4), 0 2px 4px rgba(0,0,0,0.1)'
               }}
             />
           </div>
         ))}
         
-        {/* Inner petals layer */}
-        {[...Array(12)].map((_, i) => (
+        {/* Inner petals layer - 14 petals offset */}
+        {[...Array(14)].map((_, i) => (
           <div
             key={`inner-${i}`}
             className="absolute left-1/2 top-1/2 origin-bottom"
             style={{
-              transform: `translate(-50%, -100%) rotate(${i * 30 + 15}deg)`,
+              transform: `translate(-50%, -100%) rotate(${i * (360/14) + (180/14)}deg)`,
             }}
           >
             <div
-              className="w-5 h-14 rounded-full bg-gradient-to-t from-orange-400 via-yellow-300 to-yellow-200"
+              className="w-6 h-20 rounded-[50%]"
               style={{
-                transform: isPlaying ? 'scaleY(1) scaleX(1)' : 'scaleY(0) scaleX(0.5)',
+                background: 'linear-gradient(to top, #fb923c, #fdba74, #fef08a)',
+                transform: isPlaying ? 'scaleY(1) scaleX(1)' : 'scaleY(0) scaleX(0.3)',
                 transformOrigin: 'bottom center',
-                transition: `transform ${14 + i * 0.4}s ease-out ${12 + i * 0.25}s`,
-                boxShadow: 'inset 0 -8px 15px rgba(251, 146, 60, 0.4)'
+                transition: `transform ${12 + i * 0.25}s ease-out ${9 + i * 0.15}s`,
+                boxShadow: 'inset 0 -10px 20px rgba(251, 146, 60, 0.5)'
               }}
             />
           </div>
@@ -91,24 +97,25 @@ const AnimatedDaisyBloom = ({ isPlaying }) => {
 
         {/* Center disc */}
         <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-radial from-green-600 via-green-700 to-green-800"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
           style={{
-            width: isPlaying ? '48px' : '16px',
-            height: isPlaying ? '48px' : '16px',
-            transition: 'all 8s ease-out 6s',
-            boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.3), 0 0 20px rgba(34, 197, 94, 0.3)'
+            width: isPlaying ? '56px' : '12px',
+            height: isPlaying ? '56px' : '12px',
+            background: 'radial-gradient(circle at 40% 40%, #22c55e, #16a34a, #15803d)',
+            transition: 'all 6s ease-out 5s',
+            boxShadow: 'inset 2px 2px 10px rgba(0,0,0,0.3), 0 0 20px rgba(34, 197, 94, 0.4)'
           }}
         >
-          {/* Center texture dots */}
-          {isPlaying && [...Array(7)].map((_, i) => (
+          {/* Center texture pattern */}
+          {isPlaying && [...Array(12)].map((_, i) => (
             <div
               key={`dot-${i}`}
-              className="absolute w-1.5 h-1.5 rounded-full bg-green-900/60"
+              className="absolute w-2 h-2 rounded-full bg-green-800/50"
               style={{
-                top: `${30 + Math.sin(i * 0.9) * 20}%`,
-                left: `${30 + Math.cos(i * 0.9) * 20}%`,
+                top: `${35 + Math.sin(i * 0.52) * 25}%`,
+                left: `${35 + Math.cos(i * 0.52) * 25}%`,
                 opacity: isPlaying ? 1 : 0,
-                transition: `opacity 2s ease-out ${18 + i * 0.2}s`
+                transition: `opacity 1s ease-out ${14 + i * 0.1}s`
               }}
             />
           ))}
@@ -116,15 +123,15 @@ const AnimatedDaisyBloom = ({ isPlaying }) => {
       </div>
 
       {/* Gentle floating particles */}
-      {isPlaying && [...Array(6)].map((_, i) => (
+      {isPlaying && [...Array(8)].map((_, i) => (
         <div
           key={`particle-${i}`}
-          className="absolute w-2 h-2 rounded-full bg-yellow-300/40"
+          className="absolute w-2 h-2 rounded-full bg-yellow-400/30"
           style={{
-            left: `${20 + i * 12}%`,
-            animation: `float ${4 + i * 0.5}s ease-in-out infinite`,
-            animationDelay: `${i * 0.8}s`,
-            top: `${30 + Math.sin(i) * 20}%`
+            left: `${15 + i * 10}%`,
+            animation: `float ${3.5 + i * 0.4}s ease-in-out infinite`,
+            animationDelay: `${i * 0.6}s`,
+            top: `${25 + Math.sin(i * 1.2) * 25}%`
           }}
         />
       ))}
