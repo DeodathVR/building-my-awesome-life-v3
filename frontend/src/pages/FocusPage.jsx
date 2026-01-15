@@ -19,7 +19,9 @@ const exercises = [
     icon: Flower,
     duration: 300, // 5 minutes default
     instructions: 'Sit comfortably, breathe deeply, and focus on the lotus blooming.',
-    videoUrl: 'https://player.vimeo.com/video/317660385?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1'
+    // Royalty-free nature video from Pixabay
+    videoUrl: 'https://cdn.pixabay.com/video/2020/05/25/40130-424930959_large.mp4',
+    posterUrl: 'https://images.unsplash.com/photo-1474557157379-8aa74a6ef541?w=1200&q=80'
   },
   {
     id: 'expanding-circle',
@@ -242,15 +244,17 @@ const FocusPage = () => {
         {/* Video background for Lotus */}
         {selectedExercise.id === 'lotus' && (
           <div className="absolute inset-0">
-            <iframe
-              src={selectedExercise.videoUrl}
+            <video
+              autoPlay
+              loop
+              muted={isMuted}
+              playsInline
               className="w-full h-full object-cover"
-              frameBorder="0"
-              allow="autoplay; fullscreen"
-              allowFullScreen
-              title="Lotus bloom time-lapse"
-              style={{ pointerEvents: 'none' }}
-            />
+              poster={selectedExercise.posterUrl}
+            >
+              <source src={selectedExercise.videoUrl} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         )}
 
