@@ -1,57 +1,97 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Clock, Flower, Circle, Wind } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Clock, Flower, Circle, Wind, X, Music } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Slider } from '../components/ui/slider';
 import { toast } from 'sonner';
 
+// Breathing pattern: Inhale 4s, Hold 2-4s, Exhale 6s (total ~12-14s cycle)
+const BREATH_INHALE = 4000;
+const BREATH_HOLD = 3000;
+const BREATH_EXHALE = 6000;
+const BREATH_CYCLE = BREATH_INHALE + BREATH_HOLD + BREATH_EXHALE;
+
 const exercises = [
   {
-    id: 'flower',
-    name: 'Flower Observation',
-    description: 'Focus on the petals unfolding. Let your thoughts settle like dewdrops.',
+    id: 'lotus',
+    name: 'Lotus Observation',
+    description: 'Watch the sacred lotus bloom in a serene pond. Let its gentle unfolding calm your mind.',
     icon: Flower,
-    bgClass: 'focus-flower-bg',
     duration: 300, // 5 minutes default
-    instructions: 'Sit comfortably, breathe deeply, and focus on the flower blooming.'
+    instructions: 'Sit comfortably, breathe deeply, and focus on the lotus blooming.',
+    videoUrl: 'https://player.vimeo.com/video/317660385?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1'
   },
   {
     id: 'expanding-circle',
     name: 'Expanding Circle',
-    description: 'Watch the circle grow with your breath. Inhale as it expands, exhale as it contracts.',
+    description: 'Follow the circle\'s rhythm: expand on inhale, hold, contract on exhale.',
     icon: Circle,
     bgClass: 'focus-zen-bg',
     duration: 180, // 3 minutes
-    instructions: 'Follow the rhythm: Inhale... Exhale...'
+    instructions: 'Breathe with the circle: Inhale (4s) → Hold (3s) → Exhale (6s)'
   },
   {
     id: 'breath-counter',
     name: 'Breath Counter',
-    description: 'Count your breaths mindfully. Each breath brings clarity.',
+    description: 'Count your breaths mindfully with guided timing. Each breath brings clarity.',
     icon: Wind,
     bgClass: 'focus-meditation-bg',
     duration: 240, // 4 minutes
-    instructions: 'Breathe in for 4 seconds, hold for 4, exhale for 4.'
+    instructions: 'Follow the rhythm: Inhale 4s → Hold 3s → Exhale 6s'
   }
 ];
+
+// Ambient music from Pixabay (royalty-free)
+const AMBIENT_MUSIC_URL = 'https://cdn.pixabay.com/audio/2024/11/04/audio_4956b4edd1.mp3';
 
 const FocusPage = () => {
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [duration, setDuration] = useState(300);
-  const [isMuted, setIsMuted] = useState(false);
-  const [breathPhase, setBreathPhase] = useState('inhale');
+  const [isMuted, setIsMuted] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [breathPhase, setBreathPhase] = useState('ready'); // ready, inhale, hold, exhale
   const [breathCount, setBreathCount] = useState(0);
   const [circleScale, setCircleScale] = useState(1);
+  const [phaseProgress, setPhaseProgress] = useState(0);
+  
   const timerRef = useRef(null);
   const breathTimerRef = useRef(null);
+  const phaseTimerRef = useRef(null);
+  const audioRef = useRef(null);
+
+  // Initialize audio
+  useEffect(() => {
+    audioRef.current = new Audio(AMBIENT_MUSIC_URL);
+    audioRef.current.loop = true;
+    audioRef.current.volume = 0.3;
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Handle music toggle
+  useEffect(() => {
+    if (audioRef.current) {
+      if (musicEnabled && isPlaying) {
+        audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [musicEnabled, isPlaying]);
 
   // Cleanup timers
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (breathTimerRef.current) clearInterval(breathTimerRef.current);
+      if (breathTimerRef.current) clearTimeout(breathTimerRef.current);
+      if (phaseTimerRef.current) clearInterval(phaseTimerRef.current);
     };
   }, []);
 
@@ -60,14 +100,67 @@ const FocusPage = () => {
     setTimeRemaining(exercise.duration);
     setDuration(exercise.duration);
     setBreathCount(0);
+    setBreathPhase('ready');
+    setCircleScale(1);
+    setPhaseProgress(0);
   };
+
+  // Breathing cycle with proper timing
+  const runBreathCycle = useCallback(() => {
+    // Inhale phase (4 seconds)
+    setBreathPhase('inhale');
+    setCircleScale(1.8);
+    setPhaseProgress(0);
+    
+    let progress = 0;
+    if (phaseTimerRef.current) clearInterval(phaseTimerRef.current);
+    phaseTimerRef.current = setInterval(() => {
+      progress += 100;
+      setPhaseProgress(Math.min(progress / BREATH_INHALE * 100, 100));
+    }, 100);
+
+    breathTimerRef.current = setTimeout(() => {
+      // Hold phase (3 seconds)
+      setBreathPhase('hold');
+      setPhaseProgress(0);
+      progress = 0;
+      
+      if (phaseTimerRef.current) clearInterval(phaseTimerRef.current);
+      phaseTimerRef.current = setInterval(() => {
+        progress += 100;
+        setPhaseProgress(Math.min(progress / BREATH_HOLD * 100, 100));
+      }, 100);
+
+      breathTimerRef.current = setTimeout(() => {
+        // Exhale phase (6 seconds)
+        setBreathPhase('exhale');
+        setCircleScale(1);
+        setPhaseProgress(0);
+        progress = 0;
+        
+        if (phaseTimerRef.current) clearInterval(phaseTimerRef.current);
+        phaseTimerRef.current = setInterval(() => {
+          progress += 100;
+          setPhaseProgress(Math.min(progress / BREATH_EXHALE * 100, 100));
+        }, 100);
+
+        breathTimerRef.current = setTimeout(() => {
+          // Increment breath count and restart cycle
+          setBreathCount(prev => prev + 1);
+          runBreathCycle();
+        }, BREATH_EXHALE);
+      }, BREATH_HOLD);
+    }, BREATH_INHALE);
+  }, []);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) {
       // Pause
       if (timerRef.current) clearInterval(timerRef.current);
-      if (breathTimerRef.current) clearInterval(breathTimerRef.current);
+      if (breathTimerRef.current) clearTimeout(breathTimerRef.current);
+      if (phaseTimerRef.current) clearInterval(phaseTimerRef.current);
       setIsPlaying(false);
+      setBreathPhase('ready');
     } else {
       // Play
       setIsPlaying(true);
@@ -77,8 +170,11 @@ const FocusPage = () => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
             clearInterval(timerRef.current);
-            clearInterval(breathTimerRef.current);
+            clearTimeout(breathTimerRef.current);
+            clearInterval(phaseTimerRef.current);
             setIsPlaying(false);
+            setBreathPhase('ready');
+            if (audioRef.current) audioRef.current.pause();
             toast.success('Session complete!', { description: 'Great job staying focused.' });
             return 0;
           }
@@ -86,43 +182,30 @@ const FocusPage = () => {
         });
       }, 1000);
 
-      // Breath animation timer (4 seconds per phase)
+      // Start breath animation for circle and breath counter
       if (selectedExercise?.id === 'expanding-circle' || selectedExercise?.id === 'breath-counter') {
-        let phase = 'inhale';
-        breathTimerRef.current = setInterval(() => {
-          if (phase === 'inhale') {
-            phase = 'exhale';
-            setBreathPhase('exhale');
-            setCircleScale(1);
-            if (selectedExercise?.id === 'breath-counter') {
-              setBreathCount(prev => prev + 1);
-            }
-          } else {
-            phase = 'inhale';
-            setBreathPhase('inhale');
-            setCircleScale(1.5);
-          }
-        }, 4000);
-        // Initial state
-        setCircleScale(1.5);
-        setBreathPhase('inhale');
+        runBreathCycle();
       }
     }
-  }, [isPlaying, selectedExercise]);
+  }, [isPlaying, selectedExercise, runBreathCycle]);
 
   const resetExercise = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    if (breathTimerRef.current) clearInterval(breathTimerRef.current);
+    if (breathTimerRef.current) clearTimeout(breathTimerRef.current);
+    if (phaseTimerRef.current) clearInterval(phaseTimerRef.current);
     setIsPlaying(false);
     setTimeRemaining(selectedExercise?.duration || duration);
     setBreathCount(0);
-    setBreathPhase('inhale');
+    setBreathPhase('ready');
     setCircleScale(1);
+    setPhaseProgress(0);
+    if (audioRef.current) audioRef.current.pause();
   };
 
   const exitExercise = () => {
     resetExercise();
     setSelectedExercise(null);
+    setMusicEnabled(false);
   };
 
   const formatTime = (seconds) => {
@@ -131,90 +214,191 @@ const FocusPage = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const getBreathText = () => {
+    switch (breathPhase) {
+      case 'inhale': return 'Inhale...';
+      case 'hold': return 'Hold...';
+      case 'exhale': return 'Exhale...';
+      default: return 'Press play to begin';
+    }
+  };
+
+  const getBreathDuration = () => {
+    switch (breathPhase) {
+      case 'inhale': return '4 seconds';
+      case 'hold': return '3 seconds';
+      case 'exhale': return '6 seconds';
+      default: return '';
+    }
+  };
+
   // Full screen exercise view
   if (selectedExercise) {
     return (
       <div 
-        className={`fixed inset-0 z-50 ${selectedExercise.bgClass} bg-cover bg-center`}
+        className={`fixed inset-0 z-50 ${selectedExercise.bgClass || 'bg-slate-900'} bg-cover bg-center`}
         data-testid={`focus-exercise-${selectedExercise.id}`}
       >
+        {/* Video background for Lotus */}
+        {selectedExercise.id === 'lotus' && (
+          <div className="absolute inset-0">
+            <iframe
+              src={selectedExercise.videoUrl}
+              className="w-full h-full object-cover"
+              frameBorder="0"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              title="Lotus bloom time-lapse"
+              style={{ pointerEvents: 'none' }}
+            />
+          </div>
+        )}
+
         {/* Overlay */}
-        <div className="absolute inset-0 focus-overlay" />
+        <div className="absolute inset-0 bg-black/40" />
 
         {/* Content */}
         <div className="relative z-10 h-full flex flex-col items-center justify-center text-white p-6">
           {/* Back button */}
           <button
             onClick={exitExercise}
-            className="absolute top-6 left-6 glass-dark px-4 py-2 rounded-full text-sm hover:bg-white/20 transition-colors"
+            className="absolute top-6 left-6 glass-dark px-4 py-2 rounded-full text-sm hover:bg-white/20 transition-colors flex items-center gap-2"
             data-testid="exit-exercise-button"
           >
-            ← Back
+            <X className="w-4 h-4" />
+            Exit
           </button>
 
-          {/* Timer */}
-          <div className="absolute top-6 right-6 glass-dark px-6 py-3 rounded-full">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              <span className="text-2xl font-mono font-bold" data-testid="focus-timer">
-                {formatTime(timeRemaining)}
-              </span>
+          {/* Timer & Music controls */}
+          <div className="absolute top-6 right-6 flex items-center gap-3">
+            {/* Music Toggle */}
+            <button
+              onClick={() => setMusicEnabled(!musicEnabled)}
+              className={`glass-dark px-4 py-3 rounded-full flex items-center gap-2 transition-colors ${musicEnabled ? 'bg-primary/30' : ''}`}
+              data-testid="music-toggle"
+            >
+              <Music className="w-5 h-5" />
+              <span className="text-sm">{musicEnabled ? 'Music On' : 'Music Off'}</span>
+            </button>
+            
+            {/* Timer */}
+            <div className="glass-dark px-6 py-3 rounded-full">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                <span className="text-2xl font-mono font-bold" data-testid="focus-timer">
+                  {formatTime(timeRemaining)}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Main exercise area */}
           <div className="text-center max-w-2xl">
-            {selectedExercise.id === 'flower' && (
+            {selectedExercise.id === 'lotus' && (
               <div className="space-y-8">
-                <div 
-                  className={`w-64 h-64 md:w-80 md:h-80 mx-auto rounded-full overflow-hidden shadow-2xl ${isPlaying ? 'animate-pulse-soft' : ''}`}
-                >
-                  <img
-                    src="https://images.unsplash.com/photo-1746091926647-4dea870bb1eb?crop=entropy&cs=srgb&fm=jpg&w=600&q=85"
-                    alt="Blooming flower"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <p className="text-xl md:text-2xl font-light opacity-90">
+                <h2 className="font-heading text-4xl font-bold drop-shadow-lg">Lotus Observation</h2>
+                <p className="text-xl md:text-2xl font-light opacity-90 drop-shadow-md">
                   {selectedExercise.instructions}
+                </p>
+                <p className="text-lg opacity-70">
+                  Watch the sacred lotus bloom. Let its gentle unfolding bring peace to your mind.
                 </p>
               </div>
             )}
 
             {selectedExercise.id === 'expanding-circle' && (
               <div className="space-y-8">
-                <div className="expanding-circle-container h-80">
+                {/* Breathing Circle */}
+                <div className="relative flex items-center justify-center h-80">
+                  {/* Outer ring */}
                   <div 
-                    className="expanding-circle transition-all duration-[4000ms] ease-in-out"
+                    className="absolute w-64 h-64 rounded-full border-4 border-white/20"
+                    style={{ transform: 'scale(1.8)' }}
+                  />
+                  
+                  {/* Animated circle */}
+                  <div 
+                    className="w-48 h-48 rounded-full flex items-center justify-center transition-all ease-in-out"
                     style={{ 
                       transform: `scale(${circleScale})`,
-                      opacity: isPlaying ? 1 : 0.5
+                      transitionDuration: breathPhase === 'inhale' ? '4s' : breathPhase === 'exhale' ? '6s' : '0.3s',
+                      background: `radial-gradient(circle, ${
+                        breathPhase === 'inhale' ? 'rgba(77, 182, 172, 0.8)' :
+                        breathPhase === 'hold' ? 'rgba(255, 213, 79, 0.8)' :
+                        breathPhase === 'exhale' ? 'rgba(77, 182, 172, 0.4)' :
+                        'rgba(77, 182, 172, 0.5)'
+                      } 0%, transparent 70%)`
                     }}
                   />
+                  
+                  {/* Center text */}
+                  <div className="absolute text-center">
+                    <p className="text-3xl font-semibold mb-1">{getBreathText()}</p>
+                    <p className="text-lg opacity-70">{getBreathDuration()}</p>
+                  </div>
                 </div>
-                <p className="text-3xl font-light animate-pulse">
-                  {breathPhase === 'inhale' ? 'Inhale...' : 'Exhale...'}
-                </p>
+
+                {/* Progress bar */}
+                {breathPhase !== 'ready' && (
+                  <div className="w-64 mx-auto">
+                    <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-white/80 transition-all duration-100 ease-linear rounded-full"
+                        style={{ width: `${phaseProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {selectedExercise.id === 'breath-counter' && (
               <div className="space-y-8">
+                {/* Breath counter display */}
                 <div className="flex flex-col items-center gap-6">
                   <div 
-                    className={`w-48 h-48 md:w-64 md:h-64 rounded-full flex items-center justify-center transition-all duration-[4000ms] ease-in-out ${
-                      breathPhase === 'inhale' ? 'bg-primary/60 scale-125' : 'bg-primary/30 scale-100'
-                    }`}
+                    className="w-56 h-56 md:w-72 md:h-72 rounded-full flex flex-col items-center justify-center transition-all ease-in-out border-4"
+                    style={{
+                      transitionDuration: breathPhase === 'inhale' ? '4s' : breathPhase === 'exhale' ? '6s' : '0.3s',
+                      transform: `scale(${breathPhase === 'inhale' || breathPhase === 'hold' ? 1.15 : 1})`,
+                      background: breathPhase === 'inhale' ? 'rgba(77, 182, 172, 0.6)' :
+                                  breathPhase === 'hold' ? 'rgba(255, 213, 79, 0.5)' :
+                                  breathPhase === 'exhale' ? 'rgba(77, 182, 172, 0.3)' :
+                                  'rgba(77, 182, 172, 0.2)',
+                      borderColor: breathPhase === 'hold' ? 'rgba(255, 213, 79, 0.8)' : 'rgba(255, 255, 255, 0.3)'
+                    }}
                   >
                     <span className="text-6xl md:text-8xl font-bold" data-testid="breath-count">
                       {breathCount}
                     </span>
+                    <span className="text-lg opacity-80 mt-2">breaths</span>
                   </div>
-                  <p className="text-2xl font-light">Breaths completed</p>
                 </div>
-                <p className="text-xl opacity-80">
-                  {breathPhase === 'inhale' ? 'Breathe in... 4 seconds' : 'Breathe out... 4 seconds'}
-                </p>
+
+                {/* Breath phase text */}
+                <div className="space-y-2">
+                  <p className="text-3xl font-semibold">{getBreathText()}</p>
+                  <p className="text-xl opacity-70">{getBreathDuration()}</p>
+                </div>
+
+                {/* Progress bar */}
+                {breathPhase !== 'ready' && (
+                  <div className="w-72 mx-auto">
+                    <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-100 ease-linear rounded-full ${
+                          breathPhase === 'hold' ? 'bg-yellow-400' : 'bg-white/80'
+                        }`}
+                        style={{ width: `${phaseProgress}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs mt-2 opacity-60">
+                      <span>Inhale 4s</span>
+                      <span>Hold 3s</span>
+                      <span>Exhale 6s</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -297,6 +481,8 @@ const FocusPage = () => {
         <div className="grid md:grid-cols-3 gap-6 stagger-children">
           {exercises.map((exercise) => {
             const Icon = exercise.icon;
+            const isLotus = exercise.id === 'lotus';
+            
             return (
               <Card
                 key={exercise.id}
@@ -304,7 +490,15 @@ const FocusPage = () => {
                 onClick={() => startExercise(exercise)}
                 data-testid={`exercise-card-${exercise.id}`}
               >
-                <div className={`relative h-64 ${exercise.bgClass} bg-cover bg-center`}>
+                <div className={`relative h-64 ${exercise.bgClass || ''} bg-cover bg-center`}>
+                  {/* Lotus preview image */}
+                  {isLotus && (
+                    <img 
+                      src="https://images.unsplash.com/photo-1474557157379-8aa74a6ef541?w=600&q=80"
+                      alt="Lotus bloom"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                     <div className="flex items-center gap-3 mb-3">
@@ -346,23 +540,23 @@ const FocusPage = () => {
           </Card>
 
           <Card className="p-8 rounded-2xl shadow-soft border-border/50">
-            <h3 className="font-heading text-xl font-semibold mb-4">Tips for Best Results</h3>
+            <h3 className="font-heading text-xl font-semibold mb-4">Breathing Pattern (4-3-6)</h3>
             <ul className="space-y-3 text-muted-foreground">
               <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                Find a quiet space with minimal distractions
+                <span className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold text-primary">1</span>
+                <span><strong className="text-foreground">Inhale (4s):</strong> Breathe in deeply through your nose</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-6 h-6 rounded-full bg-accent/30 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold text-accent-foreground">2</span>
+                <span><strong className="text-foreground">Hold (3s):</strong> Gently hold your breath</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold text-primary">3</span>
+                <span><strong className="text-foreground">Exhale (6s):</strong> Slowly release through your mouth</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                Start with shorter sessions (1-3 minutes) and build up
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                Practice at the same time daily for consistency
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                If your mind wanders, gently return to the exercise
+                Toggle ambient music for deeper relaxation
               </li>
             </ul>
           </Card>

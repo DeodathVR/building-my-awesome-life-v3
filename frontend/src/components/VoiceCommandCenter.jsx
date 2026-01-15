@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Mic, MicOff, X, HelpCircle } from 'lucide-react';
+import { Mic, MicOff, X, HelpCircle, AlertTriangle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { useApp } from '../context/AppContext';
@@ -159,6 +159,19 @@ const VoiceCommandCenter = () => {
             <DialogHeader>
               <DialogTitle className="font-heading text-2xl">Voice Commands</DialogTitle>
             </DialogHeader>
+            
+            {/* Beta Disclaimer */}
+            <div className="flex items-start gap-3 p-3 bg-accent/20 rounded-xl mt-2">
+              <AlertTriangle className="w-5 h-5 text-accent-foreground flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm text-accent-foreground">Beta Feature</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Voice commands are in beta. Best results in Chrome/Edge with a clear microphone. 
+                  Accuracy may vary with accents or background noise.
+                </p>
+              </div>
+            </div>
+
             <div className="space-y-4 mt-4">
               <div>
                 <h4 className="font-semibold text-primary mb-2">Log Habits</h4>
@@ -184,10 +197,10 @@ const VoiceCommandCenter = () => {
                 </ul>
               </div>
               {!isSupported && (
-                <div className="p-3 bg-accent/20 rounded-xl text-sm">
-                  <p className="font-medium text-accent-foreground">Browser Notice</p>
+                <div className="p-3 bg-destructive/10 rounded-xl text-sm">
+                  <p className="font-medium text-destructive">Browser Not Supported</p>
                   <p className="text-muted-foreground mt-1">
-                    Voice commands work best in Chrome or Edge. For other browsers, use text input.
+                    Voice commands work best in Chrome or Edge. For other browsers, use text input instead.
                   </p>
                 </div>
               )}
@@ -196,26 +209,32 @@ const VoiceCommandCenter = () => {
         </Dialog>
 
         {/* Main Voice Button */}
-        <button
-          onClick={handleMicClick}
-          disabled={!isSupported}
-          data-testid="voice-command-button"
-          className={`
-            w-14 h-14 rounded-full flex items-center justify-center
-            transition-all duration-300 transform hover:scale-105
-            ${isListening 
-              ? 'bg-destructive text-destructive-foreground voice-pulse listening' 
-              : 'bg-primary text-primary-foreground voice-pulse shadow-hover'
-            }
-            ${!isSupported ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-          `}
-        >
-          {isListening ? (
-            <MicOff className="w-6 h-6" strokeWidth={1.5} />
-          ) : (
-            <Mic className="w-6 h-6" strokeWidth={1.5} />
-          )}
-        </button>
+        <div className="relative">
+          {/* Beta badge */}
+          <span className="absolute -top-2 -right-1 px-1.5 py-0.5 bg-accent text-accent-foreground text-[10px] font-bold rounded-full z-10">
+            BETA
+          </span>
+          <button
+            onClick={handleMicClick}
+            disabled={!isSupported}
+            data-testid="voice-command-button"
+            className={`
+              w-14 h-14 rounded-full flex items-center justify-center
+              transition-all duration-300 transform hover:scale-105
+              ${isListening 
+                ? 'bg-destructive text-destructive-foreground voice-pulse listening' 
+                : 'bg-primary text-primary-foreground voice-pulse shadow-hover'
+              }
+              ${!isSupported ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+            `}
+          >
+            {isListening ? (
+              <MicOff className="w-6 h-6" strokeWidth={1.5} />
+            ) : (
+              <Mic className="w-6 h-6" strokeWidth={1.5} />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Feedback Toast */}

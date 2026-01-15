@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Lightbulb, Zap, Target, Clock, Layers, Play } from 'lucide-react';
+import { BookOpen, Lightbulb, Zap, Target, Clock, Layers, Play, ExternalLink } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
 import { Link } from 'react-router-dom';
@@ -45,8 +45,8 @@ const habitTips = [
 
 const focusExplanations = [
   {
-    title: 'Why Flower Observation Works',
-    content: 'Slow, natural visuals like a flower blooming train your attention span by giving your brain a gentle anchor. Unlike fast-moving content, these exercises strengthen your ability to sustain focus without overstimulation.'
+    title: 'Why Lotus Observation Works',
+    content: 'Slow, natural visuals like a lotus blooming train your attention span by giving your brain a gentle anchor. Unlike fast-moving content, these exercises strengthen your ability to sustain focus without overstimulation.'
   },
   {
     title: 'The Science of Expanding Circles',
@@ -58,7 +58,37 @@ const focusExplanations = [
   }
 ];
 
+// Educational videos (embeddable YouTube videos about habits and mindfulness)
+const educationalVideos = [
+  {
+    id: 'atomic-habits',
+    title: 'Atomic Habits Summary',
+    description: 'Key principles from James Clear\'s bestselling book on building better habits.',
+    duration: '8 min',
+    embedUrl: 'https://www.youtube.com/embed/YT7tQzmGRLA',
+    thumbnail: 'https://img.youtube.com/vi/YT7tQzmGRLA/maxresdefault.jpg'
+  },
+  {
+    id: 'meditation-science',
+    title: 'The Science of Meditation',
+    description: 'How mindfulness changes your brain and improves focus.',
+    duration: '6 min',
+    embedUrl: 'https://www.youtube.com/embed/m8rRzTtP7Tc',
+    thumbnail: 'https://img.youtube.com/vi/m8rRzTtP7Tc/maxresdefault.jpg'
+  },
+  {
+    id: 'morning-routine',
+    title: 'Building a Morning Routine',
+    description: 'Practical steps to create a morning routine that sticks.',
+    duration: '10 min',
+    embedUrl: 'https://www.youtube.com/embed/X2IkOT8mLLw',
+    thumbnail: 'https://img.youtube.com/vi/X2IkOT8mLLw/maxresdefault.jpg'
+  }
+];
+
 const EducationPage = () => {
+  const [playingVideo, setPlayingVideo] = React.useState(null);
+
   return (
     <div className="min-h-screen pb-32 md:pb-8 px-6 py-8" data-testid="education-page">
       <div className="max-w-6xl mx-auto">
@@ -74,6 +104,63 @@ const EducationPage = () => {
             Evidence-based tips from behavioral science to help you build lasting habits and improve focus.
           </p>
         </div>
+
+        {/* Educational Videos Section */}
+        <section className="mb-16">
+          <h2 className="font-heading text-2xl font-semibold mb-6 flex items-center gap-3">
+            <Play className="w-6 h-6 text-primary" />
+            Educational Videos
+          </h2>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            {educationalVideos.map((video) => (
+              <Card 
+                key={video.id}
+                className="rounded-2xl shadow-soft border-border/50 overflow-hidden group"
+                data-testid={`video-card-${video.id}`}
+              >
+                {playingVideo === video.id ? (
+                  <div className="aspect-video">
+                    <iframe
+                      src={`${video.embedUrl}?autoplay=1&rel=0`}
+                      title={video.title}
+                      className="w-full h-full"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                ) : (
+                  <div 
+                    className="aspect-video relative cursor-pointer"
+                    onClick={() => setPlayingVideo(video.id)}
+                  >
+                    <img 
+                      src={video.thumbnail}
+                      alt={video.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=600&q=80';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/50 transition-colors">
+                      <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Play className="w-8 h-8 text-primary ml-1" fill="currentColor" />
+                      </div>
+                    </div>
+                    <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/70 rounded text-white text-xs">
+                      {video.duration}
+                    </div>
+                  </div>
+                )}
+                <div className="p-4">
+                  <h4 className="font-heading font-semibold text-foreground mb-1">{video.title}</h4>
+                  <p className="text-sm text-muted-foreground">{video.description}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-8">
@@ -114,7 +201,10 @@ const EducationPage = () => {
 
             {/* Voice Logging Section */}
             <Card className="p-8 rounded-2xl shadow-soft border-border/50 bg-gradient-to-br from-primary/5 to-transparent mt-8">
-              <h3 className="font-heading text-xl font-semibold mb-4">Track & Reflect with Voice</h3>
+              <div className="flex items-start gap-3 mb-4">
+                <h3 className="font-heading text-xl font-semibold">Track & Reflect with Voice</h3>
+                <span className="px-2 py-0.5 bg-accent text-accent-foreground text-xs font-bold rounded-full">BETA</span>
+              </div>
               <p className="text-muted-foreground mb-4">
                 Use our voice logging feature to quickly mark habits as done without breaking your flow. 
                 Simply say "I completed my meditation" or "Log workout done" to update your progress instantly.
@@ -124,6 +214,10 @@ const EducationPage = () => {
                 <span className="px-3 py-1 bg-background rounded-full text-sm border">"I finished reading"</span>
                 <span className="px-3 py-1 bg-background rounded-full text-sm border">"Add habit: Exercise"</span>
               </div>
+              <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
+                <ExternalLink className="w-3 h-3" />
+                Works best in Chrome or Edge browsers
+              </p>
             </Card>
           </div>
 
@@ -178,22 +272,23 @@ const EducationPage = () => {
               </ul>
             </Card>
 
-            {/* Video Placeholder */}
-            <Card className="rounded-2xl shadow-soft border-border/50 overflow-hidden">
-              <div className="aspect-video bg-muted relative">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
-                      <Play className="w-8 h-8 text-primary" />
-                    </div>
-                    <p className="text-sm text-muted-foreground">Educational Video</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4">
-                <h4 className="font-medium text-sm">Building Habits That Stick</h4>
-                <p className="text-xs text-muted-foreground mt-1">5 min • Atomic Habits Summary</p>
-              </div>
+            {/* Additional Resources */}
+            <Card className="p-6 rounded-2xl shadow-soft border-border/50">
+              <h3 className="font-heading text-lg font-semibold mb-4">Recommended Reading</h3>
+              <ul className="space-y-3">
+                <li className="text-sm">
+                  <span className="font-medium text-foreground">Atomic Habits</span>
+                  <span className="text-muted-foreground"> — James Clear</span>
+                </li>
+                <li className="text-sm">
+                  <span className="font-medium text-foreground">The Power of Habit</span>
+                  <span className="text-muted-foreground"> — Charles Duhigg</span>
+                </li>
+                <li className="text-sm">
+                  <span className="font-medium text-foreground">Tiny Habits</span>
+                  <span className="text-muted-foreground"> — BJ Fogg</span>
+                </li>
+              </ul>
             </Card>
           </div>
         </div>
