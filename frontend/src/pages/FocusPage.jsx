@@ -403,7 +403,7 @@ const FocusPage = () => {
         )}
 
         {/* Overlay */}
-        <div className="absolute inset-0 bg-black/40" />
+        <div className={`absolute inset-0 ${selectedExercise.id === 'daisy-bloom' ? 'bg-transparent' : 'bg-black/40'}`} />
 
         {/* Content */}
         <div className="relative z-10 h-full flex flex-col items-center justify-center text-white p-6">
