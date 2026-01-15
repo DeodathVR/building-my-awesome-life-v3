@@ -69,3 +69,24 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
 2. Implement habit reminder notifications
 3. Add more voice command patterns
 4. Create habit templates for common routines
+
+## Updates - January 15, 2025 (v1.1)
+
+### Focus Practices Enhanced
+- **Lotus Observation**: Now uses royalty-free lotus bloom video from Pixabay (serene pond, pink lotus)
+- **Breathing Animation**: Fixed sync - Inhale (4s) → Hold (3s) → Exhale (6s) with progress bars
+- **Ambient Music**: Toggleable meditation music from Pixabay (looping)
+- **Visual feedback**: Color changes during breath phases (teal → gold → teal)
+
+### Education Page
+- Added 3 educational video embeds (Atomic Habits Summary, Science of Meditation, Morning Routine)
+- Videos play inline with click-to-play functionality
+
+### Voice Commands
+- Added "BETA" badge to voice command button
+- Added beta disclaimer in help dialog explaining browser limitations
+- Noted Chrome/Edge optimization
+
+### Bug Fixes
+- Verified habit updates saving correctly to MongoDB
+- Streak calculations working properly
