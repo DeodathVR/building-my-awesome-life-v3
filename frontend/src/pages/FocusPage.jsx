@@ -635,10 +635,11 @@ const FocusPage = () => {
         </div>
 
         {/* Exercises Grid */}
-        <div className="grid md:grid-cols-3 gap-6 stagger-children">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 stagger-children">
           {exercises.map((exercise) => {
             const Icon = exercise.icon;
             const isLotus = exercise.id === 'lotus';
+            const isDaisy = exercise.id === 'daisy-bloom';
             
             return (
               <Card
@@ -656,10 +657,42 @@ const FocusPage = () => {
                       className="absolute inset-0 w-full h-full object-cover"
                     />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                  
+                  {/* Daisy preview - animated thumbnail */}
+                  {isDaisy && (
+                    <div className="absolute inset-0 bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center">
+                      {/* Static daisy preview */}
+                      <div className="relative">
+                        {/* Petals */}
+                        {[...Array(12)].map((_, i) => (
+                          <div
+                            key={i}
+                            className="absolute left-1/2 top-1/2 origin-bottom"
+                            style={{ transform: `translate(-50%, -100%) rotate(${i * 30}deg)` }}
+                          >
+                            <div className="w-4 h-12 rounded-full bg-gradient-to-t from-orange-500 via-yellow-400 to-yellow-300" />
+                          </div>
+                        ))}
+                        {/* Inner petals */}
+                        {[...Array(12)].map((_, i) => (
+                          <div
+                            key={`inner-${i}`}
+                            className="absolute left-1/2 top-1/2 origin-bottom"
+                            style={{ transform: `translate(-50%, -100%) rotate(${i * 30 + 15}deg)` }}
+                          >
+                            <div className="w-3 h-8 rounded-full bg-gradient-to-t from-orange-400 via-yellow-300 to-yellow-200" />
+                          </div>
+                        ))}
+                        {/* Center */}
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-700" />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className={`absolute inset-0 ${isDaisy ? 'bg-gradient-to-t from-black/60 via-black/20 to-transparent' : 'bg-gradient-to-t from-black/70 via-black/30 to-transparent'}`} />
                   <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <div className={`w-10 h-10 rounded-xl ${isDaisy ? 'bg-yellow-500/30' : 'bg-white/20'} backdrop-blur-sm flex items-center justify-center`}>
                         <Icon className="w-5 h-5" />
                       </div>
                       <span className="text-sm opacity-80">{formatTime(exercise.duration)}</span>
@@ -671,7 +704,7 @@ const FocusPage = () => {
                 <div className="p-5 bg-card">
                   <Button className="w-full rounded-full group-hover:bg-primary/90">
                     <Play className="w-4 h-4 mr-2" fill="currentColor" />
-                    Start Session
+                    Start {isDaisy ? 'Practice' : 'Session'}
                   </Button>
                 </div>
               </Card>
