@@ -1,9 +1,136 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Clock, Flower, Circle, Wind, X, Music } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Clock, Flower, Circle, Wind, X, Music, Sun } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Slider } from '../components/ui/slider';
 import { toast } from 'sonner';
+
+// Animated Daisy Bloom Component - CSS-based flower animation
+const AnimatedDaisyBloom = ({ isPlaying }) => {
+  return (
+    <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100">
+      {/* Stem */}
+      <div 
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 bg-gradient-to-t from-green-700 to-green-500 rounded-full origin-bottom"
+        style={{
+          height: isPlaying ? '35%' : '10%',
+          transition: 'height 8s ease-out'
+        }}
+      />
+      
+      {/* Leaves */}
+      <div 
+        className="absolute bottom-[20%] left-1/2 origin-bottom-left"
+        style={{
+          transform: isPlaying ? 'translateX(-50%) rotate(-45deg) scale(1)' : 'translateX(-50%) rotate(-45deg) scale(0)',
+          transition: 'transform 6s ease-out 4s'
+        }}
+      >
+        <div className="w-8 h-16 bg-gradient-to-t from-green-600 to-green-400 rounded-full" />
+      </div>
+      <div 
+        className="absolute bottom-[25%] left-1/2 origin-bottom-right"
+        style={{
+          transform: isPlaying ? 'translateX(-50%) rotate(45deg) scale(1)' : 'translateX(-50%) rotate(45deg) scale(0)',
+          transition: 'transform 6s ease-out 5s'
+        }}
+      >
+        <div className="w-8 h-14 bg-gradient-to-t from-green-600 to-green-400 rounded-full" />
+      </div>
+
+      {/* Flower head container */}
+      <div 
+        className="absolute top-[15%] left-1/2 -translate-x-1/2"
+        style={{
+          opacity: isPlaying ? 1 : 0,
+          transform: isPlaying ? 'translateX(-50%) scale(1)' : 'translateX(-50%) scale(0.3)',
+          transition: 'all 10s ease-out 6s'
+        }}
+      >
+        {/* Outer petals layer */}
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={`outer-${i}`}
+            className="absolute left-1/2 top-1/2 origin-bottom"
+            style={{
+              transform: `translate(-50%, -100%) rotate(${i * 30}deg)`,
+            }}
+          >
+            <div
+              className="w-6 h-20 rounded-full bg-gradient-to-t from-orange-500 via-yellow-400 to-yellow-300"
+              style={{
+                transform: isPlaying ? 'scaleY(1) scaleX(1)' : 'scaleY(0) scaleX(0.5)',
+                transformOrigin: 'bottom center',
+                transition: `transform ${12 + i * 0.5}s ease-out ${8 + i * 0.3}s`,
+                boxShadow: 'inset 0 -10px 20px rgba(234, 88, 12, 0.3)'
+              }}
+            />
+          </div>
+        ))}
+        
+        {/* Inner petals layer */}
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={`inner-${i}`}
+            className="absolute left-1/2 top-1/2 origin-bottom"
+            style={{
+              transform: `translate(-50%, -100%) rotate(${i * 30 + 15}deg)`,
+            }}
+          >
+            <div
+              className="w-5 h-14 rounded-full bg-gradient-to-t from-orange-400 via-yellow-300 to-yellow-200"
+              style={{
+                transform: isPlaying ? 'scaleY(1) scaleX(1)' : 'scaleY(0) scaleX(0.5)',
+                transformOrigin: 'bottom center',
+                transition: `transform ${14 + i * 0.4}s ease-out ${12 + i * 0.25}s`,
+                boxShadow: 'inset 0 -8px 15px rgba(251, 146, 60, 0.4)'
+              }}
+            />
+          </div>
+        ))}
+
+        {/* Center disc */}
+        <div
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-radial from-green-600 via-green-700 to-green-800"
+          style={{
+            width: isPlaying ? '48px' : '16px',
+            height: isPlaying ? '48px' : '16px',
+            transition: 'all 8s ease-out 6s',
+            boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.3), 0 0 20px rgba(34, 197, 94, 0.3)'
+          }}
+        >
+          {/* Center texture dots */}
+          {isPlaying && [...Array(7)].map((_, i) => (
+            <div
+              key={`dot-${i}`}
+              className="absolute w-1.5 h-1.5 rounded-full bg-green-900/60"
+              style={{
+                top: `${30 + Math.sin(i * 0.9) * 20}%`,
+                left: `${30 + Math.cos(i * 0.9) * 20}%`,
+                opacity: isPlaying ? 1 : 0,
+                transition: `opacity 2s ease-out ${18 + i * 0.2}s`
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Gentle floating particles */}
+      {isPlaying && [...Array(6)].map((_, i) => (
+        <div
+          key={`particle-${i}`}
+          className="absolute w-2 h-2 rounded-full bg-yellow-300/40"
+          style={{
+            left: `${20 + i * 12}%`,
+            animation: `float ${4 + i * 0.5}s ease-in-out infinite`,
+            animationDelay: `${i * 0.8}s`,
+            top: `${30 + Math.sin(i) * 20}%`
+          }}
+        />
+      ))}
+    </div>
+  );
+};
 
 // Breathing pattern: Inhale 4s, Hold 2-4s, Exhale 6s (total ~12-14s cycle)
 const BREATH_INHALE = 4000;
