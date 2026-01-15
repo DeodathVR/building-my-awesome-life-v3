@@ -395,6 +395,13 @@ const FocusPage = () => {
           </div>
         )}
 
+        {/* Animated Daisy Bloom background */}
+        {selectedExercise.id === 'daisy-bloom' && (
+          <div className="absolute inset-0">
+            <AnimatedDaisyBloom isPlaying={isPlaying} />
+          </div>
+        )}
+
         {/* Overlay */}
         <div className="absolute inset-0 bg-black/40" />
 
