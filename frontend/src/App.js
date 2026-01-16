@@ -12,6 +12,7 @@ import EducationPage from "./pages/EducationPage";
 import CommunityPage from "./pages/CommunityPage";
 import AICoachPage from "./pages/AICoachPage";
 import AwesomeFeedPage from "./pages/AwesomeFeedPage";
+import SuccessConspiracyPage from "./pages/SuccessConspiracyPage";
 
 function App() {
   return (
@@ -24,10 +25,11 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/habits" element={<HabitsPage />} />
               <Route path="/focus" element={<FocusPage />} />
+              <Route path="/feed" element={<AwesomeFeedPage />} />
+              <Route path="/conspiracy" element={<SuccessConspiracyPage />} />
               <Route path="/education" element={<EducationPage />} />
               <Route path="/community" element={<CommunityPage />} />
               <Route path="/coach" element={<AICoachPage />} />
-              <Route path="/feed" element={<AwesomeFeedPage />} />
             </Routes>
           </main>
           <VoiceCommandCenter />
