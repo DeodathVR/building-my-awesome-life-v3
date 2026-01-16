@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Target, Focus, BookOpen, Users, MessageCircle, Moon, Sun, Menu, X, Sparkles } from 'lucide-react';
+import { Home, Target, Focus, BookOpen, Users, MessageCircle, Moon, Sun, Menu, X, Sparkles, Wand2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Button } from './ui/button';
 
@@ -9,6 +9,7 @@ const navItems = [
   { path: '/habits', icon: Target, label: 'Habits' },
   { path: '/focus', icon: Focus, label: 'Focus' },
   { path: '/feed', icon: Sparkles, label: 'Awesome Feed' },
+  { path: '/conspiracy', icon: Wand2, label: 'Success Conspiracy' },
   { path: '/education', icon: BookOpen, label: 'Learn' },
   { path: '/community', icon: Users, label: 'Community' },
   { path: '/coach', icon: MessageCircle, label: 'AI Coach' }
