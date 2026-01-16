@@ -141,11 +141,11 @@ const Navigation = () => {
         data-testid="mobile-bottom-navigation"
       >
         <div className="flex justify-around items-center">
-          {navItems.slice(0, 5).map(({ path, icon: Icon, label }) => (
+          {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[6]].map(({ path, icon: Icon, label }) => (
             <Link
               key={path}
               to={path}
-              data-testid={`bottom-nav-${label.toLowerCase()}`}
+              data-testid={`bottom-nav-${label.toLowerCase().replace(' ', '-')}`}
               className={`flex flex-col items-center p-2 rounded-full transition-all ${
                 location.pathname === path
                   ? 'text-primary bg-primary/10'
