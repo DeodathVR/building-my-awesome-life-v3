@@ -722,22 +722,6 @@ const SuccessConspiracyPage = () => {
               </Card>
             ))}
           </div>
-
-          {/* Subtle invite nudge */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground mb-2">
-              Know someone who could use a cosmic perspective shift?
-            </p>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => toast.success("Share link copied! Invite them to bloom with you 🌸")}
-              className="rounded-full text-primary"
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              Invite a friend to bloom
-            </Button>
-          </div>
         </section>
       </div>
     </div>
