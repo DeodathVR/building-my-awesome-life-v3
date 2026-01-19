@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Calendar, LayoutGrid, List, CheckCheck } from 'lucide-react';
+import { Plus, Search, Calendar, LayoutGrid, List, CheckCheck, Info } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import HabitCard from '../components/HabitCard';
 import AddHabitModal from '../components/AddHabitModal';
 import { useApp } from '../context/AppContext';
@@ -12,6 +13,18 @@ import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Gentle celebration animation styles
+const celebrationStyle = `
+  @keyframes gentlePop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+  .gentle-pop {
+    animation: gentlePop 0.3s ease-out;
+  }
+`;
+
 const HabitsPage = () => {
   const { habits, loading, fetchHabits, fetchStats } = useApp();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -19,6 +32,7 @@ const HabitsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('list');
   const [sortBy, setSortBy] = useState('name');
+  const [updatingDays, setUpdatingDays] = useState({}); // Track which days are being updated
 
   const filteredHabits = useMemo(() => {
     let result = [...habits];
@@ -77,6 +91,41 @@ const HabitsPage = () => {
     }
   };
 
+  // Toggle past day completion
+  const handleTogglePastDay = async (habitId, dateStr, currentlyCompleted) => {
+    const key = `${habitId}-${dateStr}`;
+    
+    // Prevent double-clicks
+    if (updatingDays[key]) return;
+    
+    setUpdatingDays(prev => ({ ...prev, [key]: true }));
+    
+    try {
+      await axios.post(`${API}/habits/log`, {
+        habit_id: habitId,
+        completed: !currentlyCompleted,
+        date: dateStr
+      });
+      
+      await fetchHabits();
+      await fetchStats();
+      
+      if (!currentlyCompleted) {
+        toast.success('Marked! Universe conspiring for your consistency 🌸', {
+          description: `${dateStr} logged successfully`
+        });
+      } else {
+        toast.info('Day unmarked', {
+          description: `${dateStr} removed from completions`
+        });
+      }
+    } catch (err) {
+      toast.error('Failed to update day');
+    }
+    
+    setUpdatingDays(prev => ({ ...prev, [key]: false }));
+  };
+
   // Generate calendar heatmap data for last 30 days
   const getHeatmapData = (habit) => {
     const data = [];
@@ -87,7 +136,18 @@ const HabitsPage = () => {
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
       const completed = habit.completions?.includes(dateStr);
-      data.push({ date: dateStr, completed, day: date.getDate() });
+      const isToday = i === 0;
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      data.push({ 
+        date: dateStr, 
+        completed, 
+        day: date.getDate(), 
+        isToday,
+        dayName,
+        monthDay,
+        canEdit: i <= 30 // Allow editing up to 30 days back
+      });
     }
     
     return data;
@@ -103,6 +163,7 @@ const HabitsPage = () => {
 
   return (
     <div className="min-h-screen pb-32 md:pb-8 px-6 py-8" data-testid="habits-page">
+      <style>{celebrationStyle}</style>
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -200,25 +261,83 @@ const HabitsPage = () => {
               <div key={habit.id} className="animate-fade-in">
                 <HabitCard habit={habit} onEdit={handleEditHabit} />
                 
-                {/* Calendar Heatmap */}
+                {/* Interactive Calendar Heatmap */}
                 <Card className="mt-2 p-4 rounded-xl border-border/50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Last 30 days</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Last 30 days</span>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="text-muted-foreground hover:text-foreground">
+                            <Info className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <p className="text-sm">Click any day to mark/unmark completion. Streaks will update automatically.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
+                  
+                  {/* Clickable heatmap cells */}
                   <div className="flex flex-wrap gap-1">
-                    {getHeatmapData(habit).map((day, idx) => (
-                      <div
-                        key={idx}
-                        className={`w-4 h-4 rounded-sm heatmap-cell ${
-                          day.completed 
-                            ? 'bg-primary' 
-                            : 'bg-muted'
-                        }`}
-                        title={`${day.date}: ${day.completed ? 'Completed' : 'Not completed'}`}
-                        data-testid={`heatmap-${habit.id}-${day.date}`}
-                      />
-                    ))}
+                    <TooltipProvider delayDuration={200}>
+                      {getHeatmapData(habit).map((day, idx) => {
+                        const isUpdating = updatingDays[`${habit.id}-${day.date}`];
+                        return (
+                          <Tooltip key={idx}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => handleTogglePastDay(habit.id, day.date, day.completed)}
+                                disabled={isUpdating}
+                                className={`
+                                  w-5 h-5 rounded-sm transition-all duration-200 
+                                  heatmap-cell cursor-pointer
+                                  hover:ring-2 hover:ring-primary/50 hover:scale-110
+                                  focus:outline-none focus:ring-2 focus:ring-primary
+                                  ${day.completed 
+                                    ? 'bg-primary hover:bg-primary/80' 
+                                    : 'bg-muted hover:bg-muted/80'
+                                  }
+                                  ${day.isToday ? 'ring-2 ring-accent' : ''}
+                                  ${isUpdating ? 'opacity-50 animate-pulse' : ''}
+                                `}
+                                data-testid={`heatmap-${habit.id}-${day.date}`}
+                                aria-label={`${day.monthDay}: ${day.completed ? 'Completed' : 'Not completed'}. Click to toggle.`}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">
+                              <div className="text-center">
+                                <p className="font-medium">{day.dayName}, {day.monthDay}</p>
+                                <p className={day.completed ? 'text-primary' : 'text-muted-foreground'}>
+                                  {day.completed ? '✓ Completed' : 'Not completed'}
+                                </p>
+                                <p className="text-muted-foreground mt-1">Click to {day.completed ? 'unmark' : 'mark'}</p>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })}
+                    </TooltipProvider>
+                  </div>
+                  
+                  {/* Legend */}
+                  <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-sm bg-muted" />
+                      <span>Missed</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-sm bg-primary" />
+                      <span>Done</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-sm bg-muted ring-2 ring-accent" />
+                      <span>Today</span>
+                    </div>
                   </div>
                 </Card>
               </div>
