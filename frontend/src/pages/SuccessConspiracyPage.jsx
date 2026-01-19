@@ -193,7 +193,7 @@ const SuccessConspiracyPage = () => {
     setIsReframing(false);
   };
 
-  // Thought Tracker - flip negative thoughts
+  // Thought Tracker - flip negative thoughts (empathetic approach)
   const handleFlipThought = async () => {
     if (!negativeThought.trim()) return;
     setIsFlipping(true);
@@ -212,12 +212,12 @@ const SuccessConspiracyPage = () => {
     if (!flip) {
       try {
         const response = await chatWithCoach(
-          `Transform this negative self-talk into a Success Conspiracy perspective (universe conspiring FOR them). Be warm and grounded. Negative thought: "${negativeThought}". Reply with just the reframed thought (1-2 sentences) with an emoji.`,
+          `Transform this negative self-talk into a Success Conspiracy perspective (universe conspiring FOR them). First acknowledge the feeling is valid, then gently reframe. Be warm and grounded, never dismissive. Negative thought: "${negativeThought}". Reply with just the reframed thought (2 sentences max) with an emoji. No marketing or sharing suggestions.`,
           null
         );
         flip = response.response;
       } catch (err) {
-        flip = "The universe is using this moment to build something beautiful in you—trust the process 🌱";
+        flip = "It's okay to feel this way—your feelings are valid. The universe might be using this moment to build something beautiful in you. Trust the process 🌱";
       }
     }
     
