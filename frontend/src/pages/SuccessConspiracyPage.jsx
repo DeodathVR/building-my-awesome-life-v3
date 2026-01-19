@@ -367,14 +367,6 @@ const SuccessConspiracyPage = () => {
                   <Sparkles className="w-4 h-4 mr-2 text-primary" />
                   Start Bloom Session
                 </Button>
-                <Button 
-                  variant="ghost"
-                  onClick={() => toast.info("Share link copied! Invite someone to bloom with you 🌸")}
-                  className="rounded-full text-muted-foreground hover:text-primary"
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Invite a Friend
-                </Button>
               </div>
             </div>
           </Card>
