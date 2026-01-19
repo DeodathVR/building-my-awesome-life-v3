@@ -227,6 +227,7 @@ const FocusPage = () => {
   const [isMuted, setIsMuted] = useState(true);
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [breathPhase, setBreathPhase] = useState('ready'); // ready, inhale, hold, exhale
+  const [expandedCard, setExpandedCard] = useState(null); // Track which card has expanded info
   const [breathCount, setBreathCount] = useState(0);
   const [circleScale, setCircleScale] = useState(1);
   const [phaseProgress, setPhaseProgress] = useState(0);
