@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Clock, Flower, Circle, Wind, X, Music, Sun } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Clock, Flower, Circle, Wind, X, Music, Sun, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Slider } from '../components/ui/slider';
