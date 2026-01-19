@@ -172,23 +172,23 @@ const SuccessConspiracyPage = () => {
     setShowCelebration(true);
   }, []);
 
-  // Cosmic Reframer - AI chat
+  // Cosmic Reframer - AI chat (empathetic, centering-first)
   const handleReframe = async () => {
     if (!reframerInput.trim()) return;
     setIsReframing(true);
     
-    const streakInfo = stats?.max_streak > 0 ? ` They have a ${stats.max_streak}-day streak going.` : '';
+    const streakInfo = stats?.max_streak > 0 ? ` They have a ${stats.max_streak}-day streak.` : '';
     const habitInfo = habits.length > 0 ? ` They're working on habits like ${habits.slice(0, 2).map(h => h.name).join(' and ')}.` : '';
     
     try {
       const response = await chatWithCoach(
-        `As a gentle, wise companion, reframe this concern with warmth and a Success Conspiracy perspective (the universe is conspiring FOR their success). Be grounded and supportive, not overly positive. Issue: "${reframerInput}"${streakInfo}${habitInfo} Keep it 2-3 sentences. End with a gentle suggestion to try a bloom session or invite a friend to the app if it feels natural.`,
+        `As a gentle, wise companion using the Success Conspiracy perspective (the universe is conspiring FOR their success), first validate their feeling with empathy, then offer a grounded reframe. Be warm and supportive, never dismissive. Issue: "${reframerInput}"${streakInfo}${habitInfo} Format: Start with validation (1 sentence acknowledging how they feel), then the reframe (1-2 sentences). Keep it centering and calming. No marketing or sharing suggestions.`,
         null
       );
       setReframerResponse(response.response);
     } catch (err) {
-      // Fallback response
-      setReframerResponse(`What feels like a setback might just be the universe's way of redirecting you toward something better. Take a moment to breathe—perhaps a quick bloom session could help you see the hidden opportunity here. 🌸`);
+      // Fallback response - empathetic first
+      setReframerResponse(`That sounds really challenging, and it's okay to feel this way. What if this moment is the universe's way of creating space for something better? Take a breath—sometimes the pause before the breakthrough feels the heaviest. 🌸`);
     }
     setIsReframing(false);
   };
