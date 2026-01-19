@@ -121,38 +121,46 @@ async def log_habit(log_input: HabitLog):
     if not habit:
         raise HTTPException(status_code=404, detail="Habit not found")
     
-    today = log_input.date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    target_date = log_input.date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     completions = habit.get("completions", [])
     
     if log_input.completed:
-        if today not in completions:
-            completions.append(today)
+        if target_date not in completions:
+            completions.append(target_date)
             completions.sort()
             
             # Calculate streak
             streak = calculate_streak(completions)
+            
+            # Find the most recent completion for last_completed
+            last_completed = completions[-1] if completions else None
             
             await db.habits.update_one(
                 {"id": log_input.habit_id},
                 {
                     "$set": {
                         "completions": completions,
-                        "last_completed": today,
+                        "last_completed": last_completed,
                         "streak": streak,
                         "total_completions": len(completions)
                     }
                 }
             )
     else:
-        if today in completions:
-            completions.remove(today)
+        if target_date in completions:
+            completions.remove(target_date)
+            completions.sort()
             streak = calculate_streak(completions)
+            
+            # Find the most recent completion for last_completed
+            last_completed = completions[-1] if completions else None
             
             await db.habits.update_one(
                 {"id": log_input.habit_id},
                 {
                     "$set": {
                         "completions": completions,
+                        "last_completed": last_completed,
                         "streak": streak,
                         "total_completions": len(completions)
                     }
