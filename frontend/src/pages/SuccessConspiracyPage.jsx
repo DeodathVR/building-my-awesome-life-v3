@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Star, Sparkles, Gift, Wand2, MessageCircle, Heart, Plus, Trophy, RefreshCw, Quote, Send, Flower, Brain, ArrowRight, Share2 } from 'lucide-react';
+import { Star, Sparkles, Gift, Wand2, MessageCircle, Heart, Plus, Trophy, RefreshCw, Quote, Send, Flower, Brain, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
