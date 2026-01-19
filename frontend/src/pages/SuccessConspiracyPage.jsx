@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Star, Sparkles, Gift, Wand2, MessageCircle, Heart, ChevronRight, Plus, Trophy, Zap, RefreshCw, Quote, Send } from 'lucide-react';
+import { Star, Sparkles, Gift, Wand2, MessageCircle, Heart, Plus, Trophy, RefreshCw, Quote, Send, Flower, Brain, ArrowRight, Share2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -31,24 +31,29 @@ const CosmicParticles = ({ density = 20 }) => (
         0%, 100% { opacity: 0.2; transform: scale(1); }
         50% { opacity: 1; transform: scale(1.8); }
       }
+      @keyframes gentlePulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+      }
+      @keyframes petalUnfurl {
+        0% { transform: scale(0.8) rotate(-10deg); opacity: 0; }
+        50% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+        100% { transform: scale(1) rotate(0deg); opacity: 1; }
+      }
+      @keyframes warmGlow {
+        0% { box-shadow: 0 0 0 0 rgba(77, 182, 172, 0.4); }
+        50% { box-shadow: 0 0 20px 10px rgba(77, 182, 172, 0.2); }
+        100% { box-shadow: 0 0 0 0 rgba(77, 182, 172, 0); }
+      }
     `}</style>
   </div>
 );
 
-// Mini lotus for backgrounds
-const MiniLotus = ({ className = '' }) => (
-  <img 
-    src="https://images.unsplash.com/photo-1474557157379-8aa74a6ef541?w=400&q=80"
-    alt=""
-    className={`object-cover ${className}`}
-  />
-);
-
-// Celebration effect component
-const CelebrationEffect = ({ show, onComplete }) => {
+// Gentle celebration component - like Yahoo Mail's satisfying but non-gamey celebration
+const GentleCelebration = ({ show, message, onComplete }) => {
   useEffect(() => {
     if (show) {
-      const timer = setTimeout(onComplete, 3000);
+      const timer = setTimeout(onComplete, 4000);
       return () => clearTimeout(timer);
     }
   }, [show, onComplete]);
@@ -57,32 +62,29 @@ const CelebrationEffect = ({ show, onComplete }) => {
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
-      <div className="relative">
-        <CosmicParticles density={50} />
-        <div className="text-center animate-bounce">
-          <div className="text-6xl mb-4">🌟</div>
-          <div className="px-6 py-3 bg-accent/90 rounded-full text-accent-foreground font-bold text-lg">
-            Conspiracy Confirmed!
-          </div>
+      <div className="relative animate-[petalUnfurl_0.8s_ease-out]">
+        <div className="absolute inset-0 animate-[warmGlow_2s_ease-out]" />
+        <div className="text-center bg-card/95 backdrop-blur-xl px-8 py-6 rounded-3xl shadow-float border border-primary/20">
+          <div className="text-4xl mb-3 animate-bounce">🌸</div>
+          <p className="font-heading text-lg font-semibold text-foreground mb-1">Conspiracy Confirmed</p>
+          <p className="text-sm text-muted-foreground max-w-xs">{message}</p>
         </div>
       </div>
     </div>
   );
 };
 
-// AI Reframe suggestions
-const reframeSuggestions = [
-  "That awkward moment? Setup for your next bold connection. Universe winks. ✨",
-  "Missed a habit? That's the universe giving you a plot twist to practice resilience—high-five from the stars! 🌟",
-  "Running late? The universe needed everyone to take a breath before your brilliance arrived.",
-  "Flat tire energy? Perfect pause for a daisy bloom moment. The cosmos has your back. 🌼",
-  "That mistake? A cosmic redirect to something better. Trust the detour.",
-  "Feeling stuck? The universe is just loading your next level. Buffering brilliance. ⏳✨",
-  "Bad weather ruined plans? Cozy habit-stacking weather delivered. You're welcome. ☔🌸",
-  "Plans fell through? Space cleared for something magical. Watch this spot. 👀",
-  "That rejection? Universe's way of saying 'wrong door, superstar.' Better one ahead. 🚪✨",
-  "Unexpected delay? Extra bloom time gifted. You're worth waiting for. 🌺"
-];
+// Thought flip suggestions for negative self-talk
+const thoughtFlips = {
+  "failing": "Universe is training your resilience muscle—every stumble is a setup for your comeback story 🌱",
+  "stuck": "The universe's gentle nudge to pause and bloom your focus—try a quick daisy session 🌼",
+  "behind": "You're not behind, you're on your own cosmic timeline. The universe doesn't do 'late' 🌟",
+  "anxious": "That flutter? Your intuition warming up for something good. Breathe with the expanding circle 💫",
+  "overwhelmed": "Universe sent a pause button disguised as overwhelm. Time for a lotus bloom moment 🪷",
+  "not good enough": "The stars didn't align just for 'good enough'—they aligned for uniquely, beautifully YOU ✨",
+  "frustrated": "Friction creates diamonds. The universe is polishing you for something brilliant 💎",
+  "tired": "Rest is part of the conspiracy too. Even flowers close at night to bloom brighter tomorrow 🌙"
+};
 
 // Card types for journal
 const cardTypes = [
@@ -101,13 +103,13 @@ const SuccessConspiracyPage = () => {
     return saved ? JSON.parse(saved) : [];
   });
   
-  const [cosmicPoints, setCosmicPoints] = useState(() => {
-    const saved = localStorage.getItem('cosmicPoints');
-    return saved ? parseInt(saved) : 0;
-  });
-  
   const [journalEntries, setJournalEntries] = useState(() => {
     const saved = localStorage.getItem('conspiracyJournal');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const [thoughtEntries, setThoughtEntries] = useState(() => {
+    const saved = localStorage.getItem('thoughtTracker');
     return saved ? JSON.parse(saved) : [];
   });
   
@@ -125,8 +127,27 @@ const SuccessConspiracyPage = () => {
   const [activeCard, setActiveCard] = useState(null);
   const [cardEntry, setCardEntry] = useState('');
   const [showCelebration, setShowCelebration] = useState(false);
-  const [currentReframe, setCurrentReframe] = useState(reframeSuggestions[0]);
-  const [isLoadingReframe, setIsLoadingReframe] = useState(false);
+  const [celebrationMessage, setCelebrationMessage] = useState('');
+  
+  // Cosmic Reframer state
+  const [reframerInput, setReframerInput] = useState('');
+  const [reframerResponse, setReframerResponse] = useState('');
+  const [isReframing, setIsReframing] = useState(false);
+  
+  // Thought Tracker state
+  const [negativeThought, setNegativeThought] = useState('');
+  const [flippedThought, setFlippedThought] = useState('');
+  const [isFlipping, setIsFlipping] = useState(false);
+
+  // Milestone unlocks (quiet, no numbers)
+  const milestones = [
+    { id: 'initiate', entries: 3, label: 'Cosmic Initiate', message: "You're already blooming into your best self" },
+    { id: 'spotter', entries: 10, label: 'Star Spotter', message: "Your eyes are opening to the magic around you" },
+    { id: 'ally', entries: 25, label: 'Universe Ally', message: "The cosmos recognizes a kindred spirit" },
+    { id: 'master', entries: 50, label: 'Conspiracy Master', message: "You've mastered the art of seeing silver linings" }
+  ];
+
+  const totalEntries = conspiracies.length + journalEntries.length + thoughtEntries.length;
 
   // Save to localStorage
   useEffect(() => {
@@ -134,39 +155,90 @@ const SuccessConspiracyPage = () => {
   }, [conspiracies]);
 
   useEffect(() => {
-    localStorage.setItem('cosmicPoints', cosmicPoints.toString());
-  }, [cosmicPoints]);
-
-  useEffect(() => {
     localStorage.setItem('conspiracyJournal', JSON.stringify(journalEntries));
   }, [journalEntries]);
+
+  useEffect(() => {
+    localStorage.setItem('thoughtTracker', JSON.stringify(thoughtEntries));
+  }, [thoughtEntries]);
 
   useEffect(() => {
     localStorage.setItem('conspiracyFeed', JSON.stringify(communityPosts));
   }, [communityPosts]);
 
-  // Check for milestone celebrations
-  useEffect(() => {
-    if (cosmicPoints > 0 && cosmicPoints % 50 === 0) {
-      setShowCelebration(true);
-    }
-  }, [cosmicPoints]);
+  // Trigger gentle celebration
+  const triggerCelebration = useCallback((message) => {
+    setCelebrationMessage(message);
+    setShowCelebration(true);
+  }, []);
 
-  // Get AI reframe
-  const getAIReframe = useCallback(async () => {
-    setIsLoadingReframe(true);
+  // Cosmic Reframer - AI chat
+  const handleReframe = async () => {
+    if (!reframerInput.trim()) return;
+    setIsReframing(true);
+    
+    const streakInfo = stats?.max_streak > 0 ? ` They have a ${stats.max_streak}-day streak going.` : '';
+    const habitInfo = habits.length > 0 ? ` They're working on habits like ${habits.slice(0, 2).map(h => h.name).join(' and ')}.` : '';
+    
     try {
       const response = await chatWithCoach(
-        "Give me a short, witty Success Conspiracy reframe (1-2 sentences). Make it playful, warm, and remind me the universe is conspiring for my success. Include an emoji.",
+        `As a gentle, wise companion, reframe this concern with warmth and a Success Conspiracy perspective (the universe is conspiring FOR their success). Be grounded and supportive, not overly positive. Issue: "${reframerInput}"${streakInfo}${habitInfo} Keep it 2-3 sentences. End with a gentle suggestion to try a bloom session or invite a friend to the app if it feels natural.`,
         null
       );
-      setCurrentReframe(response.response);
+      setReframerResponse(response.response);
     } catch (err) {
-      // Fallback to pre-written suggestions
-      setCurrentReframe(reframeSuggestions[Math.floor(Math.random() * reframeSuggestions.length)]);
+      // Fallback response
+      setReframerResponse(`What feels like a setback might just be the universe's way of redirecting you toward something better. Take a moment to breathe—perhaps a quick bloom session could help you see the hidden opportunity here. 🌸`);
     }
-    setIsLoadingReframe(false);
-  }, [chatWithCoach]);
+    setIsReframing(false);
+  };
+
+  // Thought Tracker - flip negative thoughts
+  const handleFlipThought = async () => {
+    if (!negativeThought.trim()) return;
+    setIsFlipping(true);
+    
+    // Check for keyword matches first
+    const lowerThought = negativeThought.toLowerCase();
+    let flip = null;
+    
+    for (const [key, value] of Object.entries(thoughtFlips)) {
+      if (lowerThought.includes(key)) {
+        flip = value;
+        break;
+      }
+    }
+    
+    if (!flip) {
+      try {
+        const response = await chatWithCoach(
+          `Transform this negative self-talk into a Success Conspiracy perspective (universe conspiring FOR them). Be warm and grounded. Negative thought: "${negativeThought}". Reply with just the reframed thought (1-2 sentences) with an emoji.`,
+          null
+        );
+        flip = response.response;
+      } catch (err) {
+        flip = "The universe is using this moment to build something beautiful in you—trust the process 🌱";
+      }
+    }
+    
+    setFlippedThought(flip);
+    
+    // Save to thought entries
+    const entry = {
+      id: Date.now(),
+      original: negativeThought,
+      flipped: flip,
+      date: new Date().toISOString()
+    };
+    setThoughtEntries(prev => [entry, ...prev]);
+    
+    // Trigger celebration
+    setTimeout(() => {
+      triggerCelebration("You're rewriting your story—that takes real courage 💚");
+    }, 500);
+    
+    setIsFlipping(false);
+  };
 
   // Add conspiracy
   const addConspiracy = () => {
@@ -175,14 +247,14 @@ const SuccessConspiracyPage = () => {
     const conspiracy = {
       id: Date.now(),
       text: newConspiracy,
-      date: new Date().toISOString(),
-      points: 10
+      date: new Date().toISOString()
     };
     
     setConspiracies(prev => [conspiracy, ...prev]);
-    setCosmicPoints(prev => prev + 10);
     setNewConspiracy('');
-    toast.success('+10 Cosmic Points! 🌟', { description: 'The universe noticed your awareness!' });
+    
+    // Gentle celebration
+    triggerCelebration("You're blooming stronger every day 🌸");
   };
 
   // Add journal entry
@@ -197,10 +269,10 @@ const SuccessConspiracyPage = () => {
     };
     
     setJournalEntries(prev => [entry, ...prev]);
-    setCosmicPoints(prev => prev + 15);
     setCardEntry('');
     setActiveCard(null);
-    toast.success('+15 Cosmic Points! ✨', { description: `${activeCard.name} captured!` });
+    
+    triggerCelebration(`${activeCard.name} captured—your awareness is expanding 🌟`);
   };
 
   // Add community post
@@ -215,7 +287,6 @@ const SuccessConspiracyPage = () => {
     };
     
     setCommunityPosts(prev => [post, ...prev]);
-    setCosmicPoints(prev => prev + 5);
     setNewPost('');
     toast.success('Shared with the cosmos! 🌌');
   };
@@ -233,63 +304,76 @@ const SuccessConspiracyPage = () => {
 
   return (
     <div className="min-h-screen pb-32 md:pb-8" data-testid="success-conspiracy-page">
-      {/* Celebration Effect */}
-      <CelebrationEffect show={showCelebration} onComplete={() => setShowCelebration(false)} />
+      {/* Gentle Celebration */}
+      <GentleCelebration 
+        show={showCelebration} 
+        message={celebrationMessage}
+        onComplete={() => setShowCelebration(false)} 
+      />
 
-      {/* Hero Section with Intro */}
+      {/* Hero Section with Updated Header */}
       <section className="relative py-12 px-6 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
         <CosmicParticles density={25} />
         
         <div className="relative z-10 max-w-4xl mx-auto">
           <Card className="p-8 rounded-3xl shadow-float border-border/50 glass overflow-hidden">
+            {/* Lotus thumbnail */}
             <div className="absolute top-0 right-0 w-32 h-32 opacity-20">
-              <MiniLotus className="w-full h-full rounded-full" />
+              <img 
+                src="https://images.unsplash.com/photo-1474557157379-8aa74a6ef541?w=400&q=80"
+                alt=""
+                className="w-full h-full object-cover rounded-full"
+              />
             </div>
             
             <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center">
-                  <Wand2 className="w-6 h-6 text-accent-foreground" />
+              {/* Updated Header with pulsing animation */}
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
+                  <Wand2 className="w-7 h-7 text-primary" />
                 </div>
                 <div>
-                  <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
-                    Success Conspiracy
+                  <h1 className="font-heading text-2xl md:text-3xl font-bold text-foreground leading-tight">
+                    The Universe is out to get you
+                    <span className="inline-block animate-[gentlePulse_2s_ease-in-out_infinite]">...</span>
                   </h1>
-                  <p className="text-sm text-muted-foreground">The universe is plotting your success</p>
+                  <p className="font-heading text-xl md:text-2xl font-semibold text-primary mt-1">
+                    to become the best version of yourself!
+                  </p>
                 </div>
               </div>
               
-              <div className="bg-secondary/30 rounded-2xl p-5 mb-6">
-                <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  What is Inverse Paranoia?
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Instead of fearing the worst, choose to see the <strong className="text-foreground">universe as your loving co-conspirator</strong>—rigging 
-                  everything to help you win. A challenge? A lesson. A delay? Extra bloom time. 
-                  This tab is your daily reminder to spot the wins hiding in plain sight. 🌸
-                </p>
+              {/* Updated Explanation Card */}
+              <div className="bg-secondary/30 rounded-2xl p-6 mb-6 border border-primary/10">
+                <div className="flex items-start gap-3">
+                  <Flower className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
+                  <p className="text-foreground leading-relaxed">
+                    Instead of fearing the worst, choose to see the <strong className="text-primary">universe as your loving co-conspirator</strong>—rigging 
+                    everything to help you win. A challenge? A lesson. A delay? Choose to have <em>Inverse Paranoia</em> where you constantly 
+                    see how the Universe is out to help <strong>YOU</strong> 🌸. This tab is your daily reminder to spot the wins hiding in plain 
+                    sight and <strong className="text-primary">REFRAME</strong> your thoughts.
+                  </p>
+                </div>
               </div>
 
-              {/* Cosmic Points Display */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="px-4 py-2 bg-accent/20 rounded-full flex items-center gap-2">
-                    <Star className="w-5 h-5 text-accent-foreground fill-accent-foreground" />
-                    <span className="font-bold text-lg text-accent-foreground" data-testid="cosmic-points">
-                      {cosmicPoints}
-                    </span>
-                    <span className="text-sm text-accent-foreground/70">Cosmic Points</span>
-                  </div>
-                </div>
+              {/* Soft action buttons */}
+              <div className="flex flex-wrap items-center gap-3">
                 <Button 
                   variant="outline" 
                   onClick={() => navigate('/focus')}
-                  className="rounded-full"
+                  className="rounded-full border-primary/30 hover:bg-primary/10"
                 >
-                  <Sparkles className="w-4 h-4 mr-2" />
+                  <Sparkles className="w-4 h-4 mr-2 text-primary" />
                   Start Bloom Session
+                </Button>
+                <Button 
+                  variant="ghost"
+                  onClick={() => toast.info("Share link copied! Invite someone to bloom with you 🌸")}
+                  className="rounded-full text-muted-foreground hover:text-primary"
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Invite a Friend
                 </Button>
               </div>
             </div>
@@ -298,10 +382,152 @@ const SuccessConspiracyPage = () => {
       </section>
 
       <div className="max-w-4xl mx-auto px-6 space-y-8">
+        
+        {/* Cosmic Reframer Chat Box */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <MessageCircle className="w-5 h-5 text-primary" />
+            <h2 className="font-heading text-xl font-semibold">Cosmic Reframer</h2>
+            <span className="text-xs text-muted-foreground ml-2">Your supportive companion</span>
+          </div>
+          
+          <Card className="p-6 rounded-2xl shadow-soft border-border/50 relative overflow-hidden">
+            <CosmicParticles density={8} />
+            <div className="relative z-10">
+              <p className="text-muted-foreground mb-4">
+                Share what's on your mind, and let's find the hidden opportunity together...
+              </p>
+              
+              <div className="flex gap-3 mb-4">
+                <Input
+                  placeholder="e.g., 'I feel stuck' or 'I'm worried about...'"
+                  value={reframerInput}
+                  onChange={(e) => setReframerInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleReframe()}
+                  className="rounded-xl"
+                  data-testid="reframer-input"
+                />
+                <Button 
+                  onClick={handleReframe}
+                  disabled={!reframerInput.trim() || isReframing}
+                  className="rounded-xl px-6"
+                  data-testid="reframe-button"
+                >
+                  {isReframing ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Reframe
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {reframerResponse && (
+                <div className="bg-primary/10 rounded-xl p-4 border border-primary/20">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-foreground leading-relaxed">{reframerResponse}</p>
+                      <button 
+                        onClick={() => {
+                          setReframerInput('');
+                          setReframerResponse('');
+                        }}
+                        className="text-xs text-primary mt-2 hover:underline"
+                      >
+                        Ask another question
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        </section>
+
+        {/* Thought Tracker - Re-centering */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <Brain className="w-5 h-5 text-primary" />
+            <h2 className="font-heading text-xl font-semibold">Thought Tracker</h2>
+            <span className="text-xs text-muted-foreground ml-2">Re-center your inner dialog</span>
+          </div>
+          
+          <Card className="p-6 rounded-2xl shadow-soft border-border/50">
+            <p className="text-muted-foreground mb-4">
+              <em>Catch a negative thought? Let's flip it to see the conspiracy working for you...</em>
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">I'm thinking:</label>
+                <Input
+                  placeholder="e.g., 'I'm failing' or 'I'm not good enough'"
+                  value={negativeThought}
+                  onChange={(e) => setNegativeThought(e.target.value)}
+                  className="rounded-xl"
+                  data-testid="thought-input"
+                />
+              </div>
+              
+              <Button 
+                onClick={handleFlipThought}
+                disabled={!negativeThought.trim() || isFlipping}
+                variant="outline"
+                className="rounded-full w-full border-primary/30"
+                data-testid="flip-thought-button"
+              >
+                {isFlipping ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                )}
+                Flip to Conspiracy View
+              </Button>
+
+              {flippedThought && (
+                <div className="bg-accent/10 rounded-xl p-4 border border-accent/20 animate-[petalUnfurl_0.5s_ease-out]">
+                  <p className="text-sm text-muted-foreground mb-1">The universe's perspective:</p>
+                  <p className="text-foreground font-medium">{flippedThought}</p>
+                  <button 
+                    onClick={() => {
+                      setNegativeThought('');
+                      setFlippedThought('');
+                    }}
+                    className="text-xs text-primary mt-3 hover:underline"
+                  >
+                    Flip another thought
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Recent flipped thoughts */}
+            {thoughtEntries.length > 0 && (
+              <div className="mt-6 pt-4 border-t border-border/50">
+                <p className="text-sm font-medium text-muted-foreground mb-3">Recent reframes:</p>
+                <div className="space-y-2">
+                  {thoughtEntries.slice(0, 2).map(entry => (
+                    <div key={entry.id} className="text-sm p-3 bg-muted/30 rounded-xl">
+                      <span className="text-muted-foreground line-through">{entry.original}</span>
+                      <span className="text-muted-foreground mx-2">→</span>
+                      <span className="text-foreground">{entry.flipped}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Card>
+        </section>
+
         {/* Daily Conspiracy Quest */}
         <section>
           <div className="flex items-center gap-2 mb-4">
-            <Zap className="w-5 h-5 text-primary" />
+            <Star className="w-5 h-5 text-primary" />
             <h2 className="font-heading text-xl font-semibold">Daily Conspiracy Quest</h2>
           </div>
           
@@ -333,55 +559,15 @@ const SuccessConspiracyPage = () => {
             {/* Today's conspiracies */}
             {todayConspiracies.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">Today's conspiracies ({todayConspiracies.length}/3):</p>
+                <p className="text-sm font-medium text-foreground">Today's conspiracies:</p>
                 {todayConspiracies.slice(0, 3).map(c => (
                   <div key={c.id} className="flex items-center gap-2 p-3 bg-secondary/30 rounded-xl">
                     <Star className="w-4 h-4 text-accent-foreground flex-shrink-0" />
                     <span className="text-sm">{c.text}</span>
-                    <span className="ml-auto text-xs text-primary font-medium">+{c.points} pts</span>
                   </div>
                 ))}
               </div>
             )}
-          </Card>
-        </section>
-
-        {/* Witty AI Reframe */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <MessageCircle className="w-5 h-5 text-primary" />
-            <h2 className="font-heading text-xl font-semibold">Cosmic Reframe</h2>
-          </div>
-          
-          <Card className="p-6 rounded-2xl shadow-soft border-border/50 relative overflow-hidden">
-            <CosmicParticles density={10} />
-            <div className="relative z-10">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-lg font-medium text-foreground leading-relaxed mb-4">
-                    {isLoadingReframe ? (
-                      <span className="animate-pulse">Consulting the cosmos...</span>
-                    ) : (
-                      currentReframe
-                    )}
-                  </p>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={getAIReframe}
-                    disabled={isLoadingReframe}
-                    className="rounded-full"
-                    data-testid="refresh-reframe-button"
-                  >
-                    <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingReframe ? 'animate-spin' : ''}`} />
-                    New Reframe
-                  </Button>
-                </div>
-              </div>
-            </div>
           </Card>
         </section>
 
@@ -427,7 +613,7 @@ const SuccessConspiracyPage = () => {
                         disabled={!cardEntry.trim()}
                         className="rounded-full w-full"
                       >
-                        Save Entry (+15 pts)
+                        Save Entry
                       </Button>
                     </div>
                   )}
@@ -439,7 +625,7 @@ const SuccessConspiracyPage = () => {
           {/* Recent journal entries */}
           {journalEntries.length > 0 && (
             <div className="mt-4 space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Recent entries:</p>
+              <p className="text-sm font-medium text-muted-foreground">Recent reflections:</p>
               {journalEntries.slice(0, 3).map(entry => {
                 const cardType = cardTypes.find(c => c.id === entry.type);
                 const Icon = cardType?.icon || Star;
@@ -454,40 +640,37 @@ const SuccessConspiracyPage = () => {
           )}
         </section>
 
-        {/* Milestones */}
+        {/* Quiet Milestones - No numbers, just affirmations */}
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Trophy className="w-5 h-5 text-primary" />
-            <h2 className="font-heading text-xl font-semibold">Conspiracy Milestones</h2>
+            <h2 className="font-heading text-xl font-semibold">Your Journey</h2>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { points: 50, label: 'Cosmic Initiate', unlocked: cosmicPoints >= 50 },
-              { points: 100, label: 'Star Spotter', unlocked: cosmicPoints >= 100 },
-              { points: 250, label: 'Universe Ally', unlocked: cosmicPoints >= 250 },
-              { points: 500, label: 'Conspiracy Master', unlocked: cosmicPoints >= 500 }
-            ].map((milestone, idx) => (
-              <Card 
-                key={idx}
-                className={`p-4 rounded-2xl text-center transition-all ${
-                  milestone.unlocked 
-                    ? 'bg-accent/20 border-accent/50' 
-                    : 'bg-muted/30 border-border/50 opacity-60'
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${
-                  milestone.unlocked ? 'bg-accent' : 'bg-muted'
-                }`}>
-                  <Star className={`w-5 h-5 ${milestone.unlocked ? 'text-accent-foreground fill-accent-foreground' : 'text-muted-foreground'}`} />
-                </div>
-                <p className="font-semibold text-sm">{milestone.label}</p>
-                <p className="text-xs text-muted-foreground">{milestone.points} pts</p>
-                {milestone.unlocked && (
-                  <span className="text-xs text-primary font-medium">✓ Unlocked</span>
-                )}
-              </Card>
-            ))}
+            {milestones.map((milestone) => {
+              const unlocked = totalEntries >= milestone.entries;
+              return (
+                <Card 
+                  key={milestone.id}
+                  className={`p-4 rounded-2xl text-center transition-all ${
+                    unlocked 
+                      ? 'bg-primary/10 border-primary/30 shadow-soft' 
+                      : 'bg-muted/20 border-border/30 opacity-50'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center transition-all ${
+                    unlocked ? 'bg-primary/20 animate-[warmGlow_3s_ease-in-out_infinite]' : 'bg-muted/50'
+                  }`}>
+                    <Star className={`w-5 h-5 ${unlocked ? 'text-primary fill-primary/30' : 'text-muted-foreground'}`} />
+                  </div>
+                  <p className="font-semibold text-sm">{milestone.label}</p>
+                  {unlocked && (
+                    <p className="text-xs text-muted-foreground mt-1 leading-snug">{milestone.message}</p>
+                  )}
+                </Card>
+              );
+            })}
           </div>
         </section>
 
@@ -546,6 +729,22 @@ const SuccessConspiracyPage = () => {
                 </div>
               </Card>
             ))}
+          </div>
+
+          {/* Subtle invite nudge */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground mb-2">
+              Know someone who could use a cosmic perspective shift?
+            </p>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => toast.success("Share link copied! Invite them to bloom with you 🌸")}
+              className="rounded-full text-primary"
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              Invite a friend to bloom
+            </Button>
           </div>
         </section>
       </div>
