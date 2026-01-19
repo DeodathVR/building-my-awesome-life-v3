@@ -155,7 +155,15 @@ const exercises = [
     instructions: 'Sit comfortably, breathe deeply, and focus on the lotus blooming.',
     // Royalty-free nature video from Pixabay
     videoUrl: 'https://cdn.pixabay.com/video/2020/05/25/40130-424930959_large.mp4',
-    posterUrl: 'https://images.unsplash.com/photo-1474557157379-8aa74a6ef541?w=1200&q=80'
+    posterUrl: 'https://images.unsplash.com/photo-1474557157379-8aa74a6ef541?w=1200&q=80',
+    // Educational content
+    fullDescription: 'Watch a serene lotus bloom slowly in a pond. The lotus has been a symbol of mindfulness and spiritual awakening for centuries—its patient unfolding teaches us to embrace our own growth.',
+    benefits: [
+      'Builds sustained attention through slow, natural focus',
+      'Reduces stress by engaging with calming imagery',
+      'Fosters mindfulness like observing nature\'s patience'
+    ],
+    bestFor: 'Morning centering or stress relief'
   },
   {
     id: 'expanding-circle',
@@ -164,7 +172,14 @@ const exercises = [
     icon: Circle,
     bgClass: 'focus-zen-bg',
     duration: 180, // 3 minutes
-    instructions: 'Breathe with the circle: Inhale (4s) → Hold (3s) → Exhale (6s)'
+    instructions: 'Breathe with the circle: Inhale (4s) → Hold (3s) → Exhale (6s)',
+    fullDescription: 'Follow a circle expanding and contracting with your breath. This practice uses visual cues to guide your breathing into a calming 4-3-6 rhythm that activates your parasympathetic nervous system.',
+    benefits: [
+      'Syncs mind-body through visual breathing guidance',
+      'Calms anxiety by activating relaxation response',
+      'Improves focus through rhythmic breathing patterns'
+    ],
+    bestFor: 'Anxiety relief or pre-task focus'
   },
   {
     id: 'breath-counter',
@@ -173,7 +188,14 @@ const exercises = [
     icon: Wind,
     bgClass: 'focus-meditation-bg',
     duration: 240, // 4 minutes
-    instructions: 'Follow the rhythm: Inhale 4s → Hold 3s → Exhale 6s'
+    instructions: 'Follow the rhythm: Inhale 4s → Hold 3s → Exhale 6s',
+    fullDescription: 'Count breaths mindfully with guided timing. Each counted breath becomes a small victory that builds your concentration muscle—a practice used by meditators for thousands of years.',
+    benefits: [
+      'Enhances awareness through active breath counting',
+      'Lowers heart rate and blood pressure naturally',
+      'Trains concentration for daily centering'
+    ],
+    bestFor: 'Building meditation practice or winding down'
   },
   {
     id: 'daisy-bloom',
@@ -183,7 +205,14 @@ const exercises = [
     duration: 300, // 5 minutes
     instructions: 'Sit comfortably, breathe deeply, and observe the gentle unfolding. If your mind wanders, gently return your attention.',
     isAnimated: true,
-    thumbnailGradient: 'from-yellow-400 via-orange-400 to-orange-500'
+    thumbnailGradient: 'from-yellow-400 via-orange-400 to-orange-500',
+    fullDescription: 'Watch a vibrant yellow-orange daisy unfurl petal by petal. Unlike the serene lotus, the daisy\'s warm colors and energetic bloom bring an uplifting quality to your focus practice.',
+    benefits: [
+      'Uplifts mood through warm, energizing colors',
+      'Boosts energy while maintaining calm focus',
+      'Encourages joyful presence in the moment'
+    ],
+    bestFor: 'Afternoon pick-me-up or creative inspiration'
   }
 ];
 
