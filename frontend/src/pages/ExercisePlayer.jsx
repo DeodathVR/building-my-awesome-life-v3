@@ -22,7 +22,7 @@ const exerciseDetails = {
         defaultDuration: 5
     },
     'expanding-circle': {
-        title: 'Expanding Circle',
+        title: 'Circle Concentration',
         defaultDuration: 4
     },
     'candle-flame': {

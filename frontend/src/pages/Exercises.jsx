@@ -16,12 +16,12 @@ const exercises = [
     },
     {
         id: 'expanding-circle',
-        title: 'Expanding Circle',
-        description: 'Follow a circle as it slowly expands and contracts with your breath, creating a hypnotic rhythm.',
+        title: 'Circle Concentration',
+        description: 'Gaze softly at a gentle, glowing circle. Its subtle presence brings calm and stillness to a busy mind.',
         icon: Circle,
         color: 'secondary',
         duration: '3-5 min',
-        instructions: 'Watch the circle expand and contract like your breath. Maintain focus on its edges without distraction. Let the movement guide your breathing.'
+        instructions: 'Rest your gaze on the circle\'s center. Let its soft glow fill your awareness. When thoughts arise, simply return to the circle. Allow the calm to settle in naturally.'
     },
     {
         id: 'candle-flame',
