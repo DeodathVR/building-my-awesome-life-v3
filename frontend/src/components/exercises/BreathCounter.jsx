@@ -1,17 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 export const BreathCounter = ({ isPlaying }) => {
     const [breathCount, setBreathCount] = useState(0);
-    const [phase, setPhase] = useState('inhale'); // inhale, hold, exhale, hold
-    const [phaseProgress, setPhaseProgress] = useState(0);
+    const [phase, setPhase] = useState('inhale');
     const [scale, setScale] = useState(0.5);
+    const [textOpacity, setTextOpacity] = useState(1);
+    const [displayText, setDisplayText] = useState('Breathe In');
+    const [displayDuration, setDisplayDuration] = useState('4 seconds');
+    const lastPhaseRef = useRef('inhale');
     
     useEffect(() => {
         if (!isPlaying) {
             setBreathCount(0);
             setPhase('inhale');
-            setPhaseProgress(0);
             setScale(0.5);
+            setTextOpacity(1);
+            setDisplayText('Breathe In');
+            setDisplayDuration('4 seconds');
+            lastPhaseRef.current = 'inhale';
             return;
         }
         
@@ -26,29 +32,70 @@ export const BreathCounter = ({ isPlaying }) => {
         const totalCycle = 12000;
         let cycleStart = Date.now();
         
+        // Easing function for smoother scale transitions
+        const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+        
         const animate = () => {
             const elapsed = Date.now() - cycleStart;
             const cycleTime = elapsed % totalCycle;
             
-            // Determine current phase
+            let newPhase;
+            let newScale;
+            
+            // Determine current phase with smooth easing
             if (cycleTime < phaseDurations.inhale) {
-                setPhase('inhale');
+                newPhase = 'inhale';
                 const progress = cycleTime / phaseDurations.inhale;
-                setPhaseProgress(progress);
-                setScale(0.5 + progress * 0.5);
+                const easedProgress = easeInOutSine(progress);
+                newScale = 0.5 + easedProgress * 0.5;
             } else if (cycleTime < phaseDurations.inhale + phaseDurations['hold-in']) {
-                setPhase('hold-in');
-                setPhaseProgress(1);
-                setScale(1);
+                newPhase = 'hold-in';
+                newScale = 1;
             } else if (cycleTime < phaseDurations.inhale + phaseDurations['hold-in'] + phaseDurations.exhale) {
-                setPhase('exhale');
+                newPhase = 'exhale';
                 const progress = (cycleTime - phaseDurations.inhale - phaseDurations['hold-in']) / phaseDurations.exhale;
-                setPhaseProgress(progress);
-                setScale(1 - progress * 0.5);
+                const easedProgress = easeInOutSine(progress);
+                newScale = 1 - easedProgress * 0.5;
             } else {
-                setPhase('hold-out');
-                setPhaseProgress(1);
-                setScale(0.5);
+                newPhase = 'hold-out';
+                newScale = 0.5;
+            }
+            
+            setScale(newScale);
+            
+            // Handle phase transitions with fade
+            if (newPhase !== lastPhaseRef.current) {
+                // Fade out
+                setTextOpacity(0);
+                
+                // After fade out, update text and fade in
+                setTimeout(() => {
+                    setPhase(newPhase);
+                    switch(newPhase) {
+                        case 'inhale':
+                            setDisplayText('Breathe In');
+                            setDisplayDuration('4 seconds');
+                            break;
+                        case 'hold-in':
+                            setDisplayText('Hold');
+                            setDisplayDuration('2 seconds');
+                            break;
+                        case 'exhale':
+                            setDisplayText('Breathe Out');
+                            setDisplayDuration('4 seconds');
+                            break;
+                        case 'hold-out':
+                            setDisplayText('Hold');
+                            setDisplayDuration('2 seconds');
+                            break;
+                        default:
+                            break;
+                    }
+                    // Fade in
+                    setTimeout(() => setTextOpacity(1), 50);
+                }, 300);
+                
+                lastPhaseRef.current = newPhase;
             }
             
             // Count completed breaths
@@ -63,31 +110,33 @@ export const BreathCounter = ({ isPlaying }) => {
         return () => cancelAnimationFrame(animationFrame);
     }, [isPlaying]);
     
-    const getPhaseText = () => {
-        switch(phase) {
-            case 'inhale': return 'Breathe In';
-            case 'hold-in': return 'Hold';
-            case 'exhale': return 'Breathe Out';
-            case 'hold-out': return 'Hold';
-            default: return '';
-        }
-    };
-    
-    const getPhaseColor = () => {
-        switch(phase) {
-            case 'inhale': return 'from-primary/70 to-secondary/70';
-            case 'hold-in': return 'from-secondary/70 to-accent/70';
-            case 'exhale': return 'from-accent/70 to-primary/70';
-            case 'hold-out': return 'from-primary/70 to-secondary/70';
-            default: return 'from-primary/70 to-secondary/70';
-        }
+    // Smooth color interpolation based on scale
+    const getCircleStyle = () => {
+        // Create a smooth gradient that transitions based on scale
+        const hue1 = 174; // primary (teal)
+        const hue2 = 162; // secondary (sage)
+        const hue3 = 180; // accent (calm teal)
+        
+        // Interpolate colors based on scale (0.5 to 1)
+        const normalizedScale = (scale - 0.5) * 2; // 0 to 1
+        
+        return {
+            width: `${scale * 350}px`,
+            height: `${scale * 350}px`,
+            background: `radial-gradient(circle at 30% 30%, 
+                hsl(${hue1} 43% ${55 + normalizedScale * 10}% / 0.8), 
+                hsl(${hue2} 20% ${60 + normalizedScale * 5}% / 0.7), 
+                hsl(${hue3} 18% ${55 + normalizedScale * 10}% / 0.6))`,
+            boxShadow: `0 0 ${scale * 60}px hsl(174 43% 51% / ${0.3 + normalizedScale * 0.2})`,
+            transition: 'background 0.8s ease-in-out, box-shadow 0.5s ease-in-out'
+        };
     };
     
     return (
         <div className="relative w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-background via-primary/5 to-background">
             {/* Breath Count */}
             <div className="absolute top-20 text-center">
-                <div className="text-6xl font-serif text-foreground mb-2">
+                <div className="text-6xl font-serif text-foreground mb-2 transition-all duration-500">
                     {breathCount}
                 </div>
                 <div className="text-sm text-muted-foreground uppercase tracking-wider">
@@ -100,44 +149,38 @@ export const BreathCounter = ({ isPlaying }) => {
                 {/* Outer guide ring */}
                 <div className="absolute w-[400px] h-[400px] border-2 border-primary/20 rounded-full" />
                 
-                {/* Animated breathing circle */}
+                {/* Animated breathing circle with smooth transitions */}
                 <div
-                    className={`absolute rounded-full bg-gradient-to-br ${getPhaseColor()} backdrop-blur-sm transition-all duration-100 ease-linear shadow-2xl`}
-                    style={{
-                        width: `${scale * 350}px`,
-                        height: `${scale * 350}px`,
-                        boxShadow: `0 0 ${scale * 60}px hsl(var(--primary) / 0.4)`
-                    }}
+                    className="absolute rounded-full backdrop-blur-sm shadow-2xl"
+                    style={getCircleStyle()}
                 >
                     {/* Inner glow */}
-                    <div className="absolute inset-8 rounded-full bg-primary-light/30 blur-2xl" />
+                    <div className="absolute inset-8 rounded-full bg-primary-light/30 blur-2xl transition-all duration-700" />
                 </div>
                 
-                {/* Phase text */}
-                <div className="relative text-center z-10">
+                {/* Phase text with fade transition */}
+                <div 
+                    className="relative text-center z-10 transition-opacity duration-300 ease-in-out"
+                    style={{ opacity: textOpacity }}
+                >
                     <div className="text-3xl font-serif font-light text-foreground">
-                        {getPhaseText()}
+                        {displayText}
                     </div>
-                    {(phase === 'hold-in' || phase === 'hold-out') && (
-                        <div className="text-sm text-muted-foreground mt-2">
-                            2 seconds
-                        </div>
-                    )}
-                    {(phase === 'inhale' || phase === 'exhale') && (
-                        <div className="text-sm text-muted-foreground mt-2">
-                            4 seconds
-                        </div>
-                    )}
+                    <div className="text-sm text-muted-foreground mt-2">
+                        {displayDuration}
+                    </div>
                 </div>
             </div>
             
-            {/* Progress indicator dots */}
-            <div className="absolute bottom-20 flex gap-2">
-                {['inhale', 'hold-in', 'exhale', 'hold-out'].map((p, i) => (
+            {/* Progress indicator dots with smooth transitions */}
+            <div className="absolute bottom-20 flex gap-3">
+                {['inhale', 'hold-in', 'exhale', 'hold-out'].map((p) => (
                     <div
                         key={p}
-                        className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                            phase === p ? 'bg-primary scale-125' : 'bg-muted'
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ease-in-out ${
+                            phase === p 
+                                ? 'bg-primary scale-125 shadow-lg shadow-primary/30' 
+                                : 'bg-muted/50'
                         }`}
                     />
                 ))}
