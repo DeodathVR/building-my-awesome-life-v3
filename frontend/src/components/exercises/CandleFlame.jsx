@@ -8,9 +8,9 @@ export const CandleFlame = ({ isPlaying }) => {
         if (!isPlaying) return;
         
         const animate = () => {
-            // Random flicker for realistic flame movement
-            setFlicker(Math.sin(Date.now() * 0.005) * 0.1 + Math.random() * 0.05);
-            setSway(Math.sin(Date.now() * 0.003) * 5);
+            // Slower, gentler flicker for realistic flame movement
+            setFlicker(Math.sin(Date.now() * 0.002) * 0.08 + Math.random() * 0.02);
+            setSway(Math.sin(Date.now() * 0.001) * 3);
             requestAnimationFrame(animate);
         };
         
