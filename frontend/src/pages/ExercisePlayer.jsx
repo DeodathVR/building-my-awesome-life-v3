@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react';
-import { FlowerAnimation } from '@/components/exercises/FlowerAnimation';
+import { Play, Pause, RotateCcw, ArrowLeft, Palette } from 'lucide-react';
+import { FlowerAnimation, flowerPalettes } from '@/components/exercises/FlowerAnimation';
 import { ExpandingCircle } from '@/components/exercises/ExpandingCircle';
 import { CandleFlame } from '@/components/exercises/CandleFlame';
 import { BreathCounter } from '@/components/exercises/BreathCounter';
@@ -19,19 +19,23 @@ const exerciseComponents = {
 const exerciseDetails = {
     'flower-observation': {
         title: 'Flower Observation',
-        defaultDuration: 5
+        defaultDuration: 5,
+        hasPalettes: true
     },
     'expanding-circle': {
         title: 'Circle Concentration',
-        defaultDuration: 4
+        defaultDuration: 4,
+        hasPalettes: false
     },
     'candle-flame': {
         title: 'Candle Flame Flicker',
-        defaultDuration: 5
+        defaultDuration: 5,
+        hasPalettes: false
     },
     'breath-counter': {
         title: 'Breath Counter',
-        defaultDuration: 5
+        defaultDuration: 5,
+        hasPalettes: false
     }
 };
 
@@ -42,6 +46,8 @@ export const ExercisePlayer = () => {
     const [duration, setDuration] = useState(exerciseDetails[exerciseId]?.defaultDuration || 5);
     const [timeRemaining, setTimeRemaining] = useState(duration * 60);
     const [showControls, setShowControls] = useState(true);
+    const [selectedPalette, setSelectedPalette] = useState('sunrise');
+    const [showPaletteSelector, setShowPaletteSelector] = useState(false);
     const timerRef = useRef(null);
     const hideControlsTimer = useRef(null);
     
@@ -74,6 +80,7 @@ export const ExercisePlayer = () => {
     
     useEffect(() => {
         if (isPlaying) {
+            setShowPaletteSelector(false);
             hideControlsTimer.current = setTimeout(() => {
                 setShowControls(false);
             }, 3000);
@@ -122,6 +129,13 @@ export const ExercisePlayer = () => {
         );
     }
     
+    // Props for the exercise component
+    const exerciseProps = {
+        isPlaying,
+        duration,
+        ...(details.hasPalettes && { palette: selectedPalette })
+    };
+    
     return (
         <div 
             className="fixed inset-0 bg-background flex items-center justify-center z-50"
@@ -152,9 +166,55 @@ export const ExercisePlayer = () => {
                 </h1>
             </div>
             
+            {/* Palette Button (for flower observation only) */}
+            {details.hasPalettes && (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`fixed top-6 right-6 z-50 rounded-full bg-card/80 backdrop-blur-sm hover:bg-card transition-all duration-300 ${
+                        showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
+                    onClick={() => setShowPaletteSelector(!showPaletteSelector)}
+                    data-testid="palette-button"
+                >
+                    <Palette className="w-5 h-5" />
+                </Button>
+            )}
+            
+            {/* Palette Selector Dropdown */}
+            {details.hasPalettes && showPaletteSelector && !isPlaying && (
+                <div 
+                    className={`fixed top-20 right-6 z-50 transition-all duration-300 ${
+                        showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
+                >
+                    <Card className="p-4 bg-card/95 backdrop-blur-md border-border shadow-xl">
+                        <p className="text-sm font-medium text-foreground mb-3">Choose Color Theme</p>
+                        <div className="flex flex-col gap-2">
+                            {Object.entries(flowerPalettes).map(([key, palette]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => {
+                                        setSelectedPalette(key);
+                                        setShowPaletteSelector(false);
+                                    }}
+                                    className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-200 hover:bg-muted ${
+                                        selectedPalette === key ? 'bg-muted ring-2 ring-primary' : ''
+                                    }`}
+                                    data-testid={`palette-${key}`}
+                                >
+                                    <div className={`w-8 h-8 rounded-full ${palette.preview}`} />
+                                    <span className="text-sm text-foreground">{palette.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </Card>
+                </div>
+            )}
+            
             {/* Exercise Animation */}
             <div className="w-full h-full flex items-center justify-center">
-                <ExerciseComponent isPlaying={isPlaying} duration={duration} />
+                <ExerciseComponent {...exerciseProps} />
             </div>
             
             {/* Controls */}
