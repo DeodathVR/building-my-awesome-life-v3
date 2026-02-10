@@ -168,17 +168,24 @@ export const ExercisePlayer = () => {
             
             {/* Palette Button (for flower observation only) */}
             {details.hasPalettes && (
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`fixed top-6 right-6 z-50 rounded-full bg-card/80 backdrop-blur-sm hover:bg-card transition-all duration-300 ${
-                        showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                    }`}
-                    onClick={() => setShowPaletteSelector(!showPaletteSelector)}
-                    data-testid="palette-button"
-                >
-                    <Palette className="w-5 h-5" />
-                </Button>
+                <div className={`fixed top-6 right-6 z-50 flex items-center gap-2 transition-all duration-300 ${
+                    showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}>
+                    {!isPlaying && (
+                        <span className="text-xs text-muted-foreground bg-card/80 backdrop-blur-sm px-2 py-1 rounded-full">
+                            Color themes available
+                        </span>
+                    )}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full bg-card/80 backdrop-blur-sm hover:bg-card"
+                        onClick={() => setShowPaletteSelector(!showPaletteSelector)}
+                        data-testid="palette-button"
+                    >
+                        <Palette className="w-5 h-5" />
+                    </Button>
+                </div>
             )}
             
             {/* Palette Selector Dropdown */}
