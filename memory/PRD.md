@@ -90,3 +90,24 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
 ### Bug Fixes
 - Verified habit updates saving correctly to MongoDB
 - Streak calculations working properly
+
+## Updates - February 10, 2025 (v1.2)
+
+### UI Customization
+- **Removed "Made with Emergent" watermark** from the application footer
+- Updated page title to "Awesome Life Habits" 
+- Updated meta description for SEO
+
+### Pending Tasks
+- **Focus Page Descriptions (P1)**: Add educational descriptions & benefits to each exercise card with expandable accordions
+
+### Upcoming Tasks (P2)
+- Improve Voice Command reliability
+- Implement browser notification reminders  
+- Flesh out Community Challenges UI
+
+### Future/Backlog
+- Refactor FocusPage.jsx (>700 lines) into smaller components
+- Refactor SuccessConspiracyPage.jsx into smaller components
+- Dark mode implementation
+- Additional focus exercises
