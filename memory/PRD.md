@@ -101,17 +101,24 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
 ### Focus Page Replaced with Focus Bloom Exercises
 - **Replaced entire Focus page** with new concentration exercises from Focus Bloom app
 - **4 Interactive Exercises:**
-  1. **Flower Observation** - SVG lotus flower that blooms slowly with rotation
-  2. **Expanding Circle** - Breathing circle (8s cycle: 4s in, 4s out) 
-  3. **Candle Flame Flicker** - Realistic flickering flame animation
-  4. **Breath Counter** - 4-phase breathing (4s inhale → 2s hold → 4s exhale → 2s hold)
+  1. **Flower Observation** - SVG flower with pointed petals, 4 color palettes (Sunrise, Ocean, Blossom, Lavender)
+  2. **Circle Concentration** - Calming circle with gentle glow (renamed from Expanding Circle)
+  3. **Candle Flame Flicker** - Realistic flickering flame with slower, gentler movement
+  4. **Breath Counter** - 4-phase breathing with smooth fade transitions between phases
 - **Exercise Player Features:**
   - Full-screen immersive experience
   - Timer with countdown (1-10 minute duration slider)
   - Play/Pause/Reset controls
   - Auto-hiding controls after 3 seconds
+  - Color palette selector for Flower Observation
   - Back button navigation
 - **New Routes:** `/focus` (exercise list), `/exercise/:exerciseId` (player)
+
+### Exercise Improvements Made
+- Circle Concentration: Renamed with calming description
+- Candle Flame: Slower flicker animation for relaxation
+- Breath Counter: Smooth fade transitions, fixed counter logic, static circle before play
+- Flower Observation: Pointed petals, 4 color palettes, larger growth size
 
 ### Pending Tasks
 - None - Focus page is complete
