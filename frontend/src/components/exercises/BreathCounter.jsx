@@ -8,8 +8,11 @@ export const BreathCounter = ({ isPlaying }) => {
     const [displayText, setDisplayText] = useState('Breathe In');
     const [displayDuration, setDisplayDuration] = useState('4 seconds');
     const lastPhaseRef = useRef('inhale');
+    const cycleCountRef = useRef(0);
+    const animationRef = useRef(null);
     
     useEffect(() => {
+        // Reset everything when not playing
         if (!isPlaying) {
             setBreathCount(0);
             setPhase('inhale');
@@ -18,6 +21,12 @@ export const BreathCounter = ({ isPlaying }) => {
             setDisplayText('Breathe In');
             setDisplayDuration('4 seconds');
             lastPhaseRef.current = 'inhale';
+            cycleCountRef.current = 0;
+            
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+                animationRef.current = null;
+            }
             return;
         }
         
@@ -30,7 +39,7 @@ export const BreathCounter = ({ isPlaying }) => {
         };
         
         const totalCycle = 12000;
-        let cycleStart = Date.now();
+        const cycleStart = Date.now();
         
         // Easing function for smoother scale transitions
         const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
@@ -38,6 +47,7 @@ export const BreathCounter = ({ isPlaying }) => {
         const animate = () => {
             const elapsed = Date.now() - cycleStart;
             const cycleTime = elapsed % totalCycle;
+            const currentCycleNumber = Math.floor(elapsed / totalCycle);
             
             let newPhase;
             let newScale;
@@ -98,26 +108,31 @@ export const BreathCounter = ({ isPlaying }) => {
                 lastPhaseRef.current = newPhase;
             }
             
-            // Count completed breaths
-            if (elapsed > 0 && cycleTime < 100) {
-                setBreathCount(prev => prev + 1);
+            // Count completed breath cycles - only increment when entering a new cycle
+            if (currentCycleNumber > cycleCountRef.current) {
+                cycleCountRef.current = currentCycleNumber;
+                setBreathCount(currentCycleNumber);
             }
             
-            requestAnimationFrame(animate);
+            animationRef.current = requestAnimationFrame(animate);
         };
         
-        const animationFrame = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(animationFrame);
+        animationRef.current = requestAnimationFrame(animate);
+        
+        return () => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+                animationRef.current = null;
+            }
+        };
     }, [isPlaying]);
     
-    // Smooth color interpolation based on scale
+    // Get circle style - static when not playing, animated when playing
     const getCircleStyle = () => {
-        // Create a smooth gradient that transitions based on scale
         const hue1 = 174; // primary (teal)
         const hue2 = 162; // secondary (sage)
         const hue3 = 180; // accent (calm teal)
         
-        // Interpolate colors based on scale (0.5 to 1)
         const normalizedScale = (scale - 0.5) * 2; // 0 to 1
         
         return {
@@ -128,7 +143,7 @@ export const BreathCounter = ({ isPlaying }) => {
                 hsl(${hue2} 20% ${60 + normalizedScale * 5}% / 0.7), 
                 hsl(${hue3} 18% ${55 + normalizedScale * 10}% / 0.6))`,
             boxShadow: `0 0 ${scale * 60}px hsl(174 43% 51% / ${0.3 + normalizedScale * 0.2})`,
-            transition: 'background 0.8s ease-in-out, box-shadow 0.5s ease-in-out'
+            transition: isPlaying ? 'background 0.8s ease-in-out, box-shadow 0.5s ease-in-out' : 'none'
         };
     };
     
