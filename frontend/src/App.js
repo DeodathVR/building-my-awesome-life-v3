@@ -7,7 +7,8 @@ import Navigation from "./components/Navigation";
 import VoiceCommandCenter from "./components/VoiceCommandCenter";
 import HomePage from "./pages/HomePage";
 import HabitsPage from "./pages/HabitsPage";
-import FocusPage from "./pages/FocusPage";
+import { Exercises } from "./pages/Exercises";
+import { ExercisePlayer } from "./pages/ExercisePlayer";
 import EducationPage from "./pages/EducationPage";
 import CommunityPage from "./pages/CommunityPage";
 import AICoachPage from "./pages/AICoachPage";
@@ -24,7 +25,8 @@ function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/habits" element={<HabitsPage />} />
-              <Route path="/focus" element={<FocusPage />} />
+              <Route path="/focus" element={<Exercises />} />
+              <Route path="/exercise/:exerciseId" element={<ExercisePlayer />} />
               <Route path="/feed" element={<AwesomeFeedPage />} />
               <Route path="/conspiracy" element={<SuccessConspiracyPage />} />
               <Route path="/education" element={<EducationPage />} />

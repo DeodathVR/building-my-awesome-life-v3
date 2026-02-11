@@ -90,3 +90,45 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
 ### Bug Fixes
 - Verified habit updates saving correctly to MongoDB
 - Streak calculations working properly
+
+## Updates - February 10, 2025 (v1.2)
+
+### UI Customization
+- **Removed "Made with Emergent" watermark** from the application footer
+- Updated page title to "Awesome Life Habits" 
+- Updated meta description for SEO
+
+### Focus Page Replaced with Focus Bloom Exercises
+- **Replaced entire Focus page** with new concentration exercises from Focus Bloom app
+- **4 Interactive Exercises:**
+  1. **Flower Observation** - SVG flower with pointed petals, 4 color palettes (Sunrise, Ocean, Blossom, Lavender)
+  2. **Circle Concentration** - Calming circle with gentle glow (renamed from Expanding Circle)
+  3. **Candle Flame Flicker** - Realistic flickering flame with slower, gentler movement
+  4. **Breath Counter** - 4-phase breathing with smooth fade transitions between phases
+- **Exercise Player Features:**
+  - Full-screen immersive experience
+  - Timer with countdown (1-10 minute duration slider)
+  - Play/Pause/Reset controls
+  - Auto-hiding controls after 3 seconds
+  - Color palette selector for Flower Observation
+  - Back button navigation
+- **New Routes:** `/focus` (exercise list), `/exercise/:exerciseId` (player)
+
+### Exercise Improvements Made
+- Circle Concentration: Renamed with calming description
+- Candle Flame: Slower flicker animation for relaxation
+- Breath Counter: Smooth fade transitions, fixed counter logic, static circle before play
+- Flower Observation: Pointed petals, 4 color palettes, larger growth size
+
+### Pending Tasks
+- None - Focus page is complete
+
+### Upcoming Tasks (P2)
+- Improve Voice Command reliability
+- Implement browser notification reminders  
+- Flesh out Community Challenges UI
+
+### Future/Backlog
+- Refactor SuccessConspiracyPage.jsx into smaller components
+- Dark mode implementation
+- Additional focus exercises
