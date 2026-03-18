@@ -65,7 +65,50 @@ const HomePage = () => {
   return (
     <div className="min-h-screen pb-32 md:pb-8" data-testid="home-page">
       {/* Hero Section */}
-      <section className="hero-bg hero-gradient relative py-16 md:py-24 px-6">
+      <section className={`hero-bg theme-${heroTheme} hero-gradient relative py-16 md:py-24 px-6`}>
+        {/* Theme Selector Button */}
+        <div className="absolute top-4 right-4 z-20">
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full bg-card/80 backdrop-blur-sm hover:bg-card shadow-soft"
+              onClick={() => setShowThemeSelector(!showThemeSelector)}
+              data-testid="theme-selector-button"
+            >
+              <Palette className="w-5 h-5" />
+            </Button>
+            
+            {/* Theme Dropdown */}
+            {showThemeSelector && (
+              <Card className="absolute top-12 right-0 p-3 bg-card/95 backdrop-blur-md border-border shadow-xl min-w-[200px] z-50">
+                <p className="text-xs font-medium text-muted-foreground mb-2 px-2">Choose Theme</p>
+                <div className="space-y-1">
+                  {Object.entries(heroThemes).map(([key, theme]) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setHeroTheme(key);
+                        setShowThemeSelector(false);
+                      }}
+                      className={`w-full flex items-center gap-3 p-2 rounded-lg transition-all duration-200 hover:bg-muted text-left ${
+                        heroTheme === key ? 'bg-muted ring-2 ring-primary' : ''
+                      }`}
+                      data-testid={`theme-${key}`}
+                    >
+                      <div className={`w-8 h-8 rounded-full ${theme.preview}`} />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{theme.name}</p>
+                        <p className="text-xs text-muted-foreground">{theme.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
+
         <div className="relative z-10 max-w-6xl mx-auto">
           <div className="max-w-2xl animate-fade-in">
             <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
