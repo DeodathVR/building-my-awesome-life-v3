@@ -114,11 +114,13 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
   - Back button navigation
 - **New Routes:** `/focus` (exercise list), `/exercise/:exerciseId` (player)
 
-### Exercise Improvements Made
-- Circle Concentration: Renamed with calming description
-- Candle Flame: Slower flicker animation for relaxation
-- Breath Counter: Smooth fade transitions, fixed counter logic, static circle before play
-- Flower Observation: Pointed petals, 4 color palettes, larger growth size
+### Home Page Theme Customization
+- Added 3 selectable hero background themes:
+  1. **Misty Mountains** (original) - Cool, serene forest landscape
+  2. **Growth & Bloom** - Warm botanical with sage green and terracotta
+  3. **Sunny Optimism** - Bright yellow/orange with sun rays
+- Theme selector accessible via palette icon in hero section (top right)
+- Theme preference persists via localStorage
 
 ### Pending Tasks
 - None - Focus page is complete
