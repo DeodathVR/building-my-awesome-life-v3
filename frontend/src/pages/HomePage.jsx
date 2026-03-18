@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Target, Flame, TrendingUp, ArrowRight, Sparkles } from 'lucide-react';
+import { Plus, Target, Flame, TrendingUp, ArrowRight, Sparkles, Palette } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import HabitCard from '../components/HabitCard';
@@ -8,10 +8,36 @@ import AddHabitModal from '../components/AddHabitModal';
 import { useApp } from '../context/AppContext';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
+const heroThemes = {
+  mountains: {
+    name: 'Misty Mountains',
+    description: 'Cool & serene',
+    preview: 'bg-gradient-to-r from-teal-200 via-slate-200 to-cyan-200'
+  },
+  growth: {
+    name: 'Growth & Bloom',
+    description: 'Warm & botanical',
+    preview: 'bg-gradient-to-r from-amber-200 via-green-200 to-orange-200'
+  },
+  sunny: {
+    name: 'Sunny Optimism',
+    description: 'Bright & uplifting',
+    preview: 'bg-gradient-to-r from-yellow-200 via-amber-200 to-orange-200'
+  }
+};
+
 const HomePage = () => {
   const { habits, stats, loading } = useApp();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editHabit, setEditHabit] = useState(null);
+  const [heroTheme, setHeroTheme] = useState(() => {
+    return localStorage.getItem('heroTheme') || 'mountains';
+  });
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('heroTheme', heroTheme);
+  }, [heroTheme]);
 
   const handleEditHabit = (habit) => {
     setEditHabit(habit);
