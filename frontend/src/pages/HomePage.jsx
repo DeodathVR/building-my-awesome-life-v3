@@ -248,35 +248,10 @@ const HomePage = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Weekly Chart */}
+              {/* Weekly Progress Heatmap */}
               <Card className="p-6 rounded-2xl shadow-soft border-border/50">
                 <h3 className="font-heading text-lg font-semibold mb-4">Weekly Progress</h3>
-                <div className="h-40">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats?.weekly_data || []}>
-                      <XAxis 
-                        dataKey="day" 
-                        axisLine={false} 
-                        tickLine={false}
-                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      />
-                      <YAxis hide />
-                      <Tooltip 
-                        contentStyle={{ 
-                          background: 'hsl(var(--card))', 
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '12px',
-                          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-                        }}
-                      />
-                      <Bar 
-                        dataKey="completions" 
-                        fill="hsl(var(--primary))" 
-                        radius={[6, 6, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <WeeklyHeatmap weeklyData={stats?.weekly_data || []} />
               </Card>
 
               {/* Quick Actions */}
