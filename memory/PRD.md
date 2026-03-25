@@ -117,10 +117,16 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
 ### Home Page Theme Customization
 - Added 3 selectable hero background themes:
   1. **Misty Mountains** (original) - Cool, serene forest landscape
-  2. **Growth & Bloom** - Warm botanical with sage green and terracotta
+  2. **Growth & Bloom** - Fluid, iridescent design with teal ribbons, golden/lavender bubbles, and sparkles
   3. **Sunny Optimism** - Bright yellow/orange with sun rays
 - Theme selector accessible via palette icon in hero section (top right)
 - Theme preference persists via localStorage
+
+### Weekly Progress Redesign
+- Replaced bar chart with **calendar heatmap grid** (4 weeks x 7 days)
+- Teal color gradient showing completion intensity
+- Day labels (Thu-Wed) at bottom
+- Hover effects on each cell
 
 ### Pending Tasks
 - None - Focus page is complete
