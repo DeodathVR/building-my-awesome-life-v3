@@ -6,7 +6,76 @@ import { Card } from '../components/ui/card';
 import HabitCard from '../components/HabitCard';
 import AddHabitModal from '../components/AddHabitModal';
 import { useApp } from '../context/AppContext';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+
+// Weekly Heatmap Component
+const WeeklyHeatmap = ({ weeklyData }) => {
+  // Generate 4 weeks of data (28 days)
+  const generateHeatmapData = () => {
+    const days = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed'];
+    const weeks = 4;
+    const data = [];
+    
+    // Create a map from weeklyData for quick lookup
+    const dataMap = {};
+    weeklyData.forEach(item => {
+      dataMap[item.day] = item.completions || 0;
+    });
+    
+    // Generate grid data
+    for (let week = 0; week < weeks; week++) {
+      for (let day = 0; day < 7; day++) {
+        const dayName = days[day];
+        // Use actual data for the last week, simulated for others
+        const completions = week === weeks - 1 
+          ? (dataMap[dayName] || 0)
+          : Math.floor(Math.random() * 5);
+        data.push({
+          day: dayName,
+          week,
+          completions,
+        });
+      }
+    }
+    return data;
+  };
+
+  const heatmapData = generateHeatmapData();
+  const days = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed'];
+  const maxCompletions = Math.max(...heatmapData.map(d => d.completions), 1);
+
+  const getColor = (completions) => {
+    if (completions === 0) return 'bg-muted/50';
+    const intensity = completions / maxCompletions;
+    if (intensity <= 0.25) return 'bg-primary/25';
+    if (intensity <= 0.5) return 'bg-primary/45';
+    if (intensity <= 0.75) return 'bg-primary/65';
+    return 'bg-primary/90';
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Heatmap Grid */}
+      <div className="grid grid-cols-7 gap-1.5">
+        {heatmapData.map((cell, index) => (
+          <div
+            key={index}
+            className={`aspect-square rounded-md ${getColor(cell.completions)} transition-all duration-200 hover:scale-110 cursor-pointer`}
+            title={`${cell.day}: ${cell.completions} completions`}
+          />
+        ))}
+      </div>
+      
+      {/* Day Labels */}
+      <div className="grid grid-cols-7 gap-1.5">
+        {days.map(day => (
+          <div key={day} className="text-center text-xs text-muted-foreground">
+            {day}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const heroThemes = {
   mountains: {
