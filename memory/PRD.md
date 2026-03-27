@@ -114,6 +114,24 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
   - Back button navigation
 - **New Routes:** `/focus` (exercise list), `/exercise/:exerciseId` (player)
 
+## Updates - March 2025 (v1.3)
+
+### Firebase Migration
+- **Replaced Emergent backend** with Firebase Firestore for data persistence
+- **Direct Gemini API calls** for AI Coach (no backend proxy needed)
+- **New files created:**
+  - `/app/frontend/src/firebase.js` - Firebase configuration
+  - Updated `/app/frontend/src/context/AppContext.js` - Firebase Firestore integration
+- **Environment variables updated** in `.env`:
+  - Removed `REACT_APP_BACKEND_URL`
+  - Added Firebase config keys (API key, project ID, etc.)
+  - Added `REACT_APP_GEMINI_API_KEY` for direct AI calls
+- **Collections in Firestore:**
+  - `habits` - User habits with completions tracking
+  - `community_posts` - Community feed posts
+  - `challenges` - Preset challenges
+- Auto-seeds initial data if collections are empty
+
 ### Home Page Theme Customization
 - Added 3 selectable hero background themes:
   1. **Misty Mountains** (original) - Cool, serene forest landscape
