@@ -79,9 +79,10 @@ const HabitsPage = () => {
     }
 
     try {
-      await axios.post(`${API}/habits/bulk-log`, incompleteHabits.map(h => h.id));
-      await fetchHabits();
-      await fetchStats();
+      // Log each habit using the context function
+      for (const habit of incompleteHabits) {
+        await logHabit(habit.id, true, today);
+      }
       toast.success(`Logged ${incompleteHabits.length} habits!`);
     } catch (err) {
       toast.error('Failed to bulk log habits');
@@ -98,14 +99,7 @@ const HabitsPage = () => {
     setUpdatingDays(prev => ({ ...prev, [key]: true }));
     
     try {
-      await axios.post(`${API}/habits/log`, {
-        habit_id: habitId,
-        completed: !currentlyCompleted,
-        date: dateStr
-      });
-      
-      await fetchHabits();
-      await fetchStats();
+      await logHabit(habitId, !currentlyCompleted, dateStr);
       
       if (!currentlyCompleted) {
         toast.success('Marked! Universe conspiring for your consistency 🌸', {
