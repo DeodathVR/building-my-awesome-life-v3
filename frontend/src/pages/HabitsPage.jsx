@@ -23,7 +23,7 @@ const celebrationStyle = `
 `;
 
 const HabitsPage = () => {
-  const { habits, loading, fetchHabits, fetchStats } = useApp();
+  const { habits, loading, fetchHabits, fetchStats, logHabit } = useApp();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editHabit, setEditHabit] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
