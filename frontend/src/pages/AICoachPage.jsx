@@ -66,10 +66,11 @@ const AICoachPage = () => {
       setSessionId(response.session_id);
       setMessages(prev => [...prev, { role: 'assistant', content: response.response }]);
     } catch (err) {
-      toast.error('Failed to get response');
+      const errorMessage = err.message || 'Failed to get response';
+      toast.error(errorMessage);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: "I'm having trouble connecting right now. Please try again in a moment." 
+        content: `Sorry, I encountered an error: ${errorMessage}. Please try again later.` 
       }]);
     }
     
