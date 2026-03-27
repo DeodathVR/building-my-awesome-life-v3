@@ -453,6 +453,10 @@ export const AppProvider = ({ children }) => {
   // Chat with AI coach (using Gemini API directly)
   const chatWithCoach = async (message, sessionId = null) => {
     try {
+      if (!GEMINI_API_KEY) {
+        throw new Error('Gemini API key not configured');
+      }
+
       const systemPrompt = `You are a supportive and knowledgeable AI habit coach. Your role is to:
 - Help users build and maintain positive habits
 - Provide encouragement and motivation
@@ -483,11 +487,23 @@ Current user habits: ${habits.map(h => h.name).join(', ')}`;
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response from AI');
+      const data = await response.json();
+
+      // Check for API errors
+      if (data.error) {
+        console.error('Gemini API Error:', data.error);
+        if (data.error.code === 429) {
+          throw new Error('API quota exceeded. Please try again later or check your billing at https://ai.google.dev');
+        } else if (data.error.code === 404) {
+          throw new Error('Model not found. The API model may have been updated.');
+        }
+        throw new Error(data.error.message || 'Failed to get response from AI');
       }
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
       const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 
         "I'm having trouble responding right now. Please try again.";
 
