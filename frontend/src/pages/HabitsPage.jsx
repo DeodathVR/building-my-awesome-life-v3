@@ -9,9 +9,6 @@ import HabitCard from '../components/HabitCard';
 import AddHabitModal from '../components/AddHabitModal';
 import { useApp } from '../context/AppContext';
 import { toast } from 'sonner';
-import axios from 'axios';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Gentle celebration animation styles
 const celebrationStyle = `
