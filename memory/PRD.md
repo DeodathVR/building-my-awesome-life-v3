@@ -158,3 +158,14 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
 - Refactor SuccessConspiracyPage.jsx into smaller components
 - Dark mode implementation
 - Additional focus exercises
+
+## Updates - April 2025 (v1.4)
+
+### AI Features Restored
+- Replaced blocked/leaked Gemini API key with new valid key in `frontend/.env`
+- AI Coach (Gemini 2.5 Flash) is fully operational again
+- Success Conspiracy Cosmic Reframer AI feature is operational again
+
+### Next Action Items (P1)
+- Migrate Awesome Feed videos from hardcoded React arrays to Firestore `feed_content` collection
+- Migrate Education content from hardcoded arrays to Firestore `educational_content` collection
