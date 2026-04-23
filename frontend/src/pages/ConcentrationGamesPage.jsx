@@ -282,8 +282,10 @@ function RapidTap({ onDone }) {
   );
 }
 
+const BOX_PHASES = [{ l: 'Breathe In', d: 4 }, { l: 'Hold', d: 4 }, { l: 'Breathe Out', d: 4 }, { l: 'Hold', d: 4 }];
+
 function BoxBreathing({ onDone }) {
-  const PH = [{ l: 'Breathe In', d: 4 }, { l: 'Hold', d: 4 }, { l: 'Breathe Out', d: 4 }, { l: 'Hold', d: 4 }];
+  const PH = BOX_PHASES;
   const [round, setRound] = useState(1);
   const [pi, setPi] = useState(0);
   const [tick, setTick] = useState(4);
@@ -306,6 +308,7 @@ function BoxBreathing({ onDone }) {
       });
     }, 1000);
     return () => clearInterval(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pi, round, done]);
 
   const scale = pi === 0 ? 1.25 : pi === 2 ? 0.78 : 1;
@@ -490,6 +493,7 @@ function WordFilter({ onDone }) {
     if (done) return;
     const t = setTimeout(() => { setShow(false); setTimeout(() => { if (idx + 1 >= words.length) { setDone(true); logGame(); addXp(score >= 16 ? 60 : 35); } else { setIdx(i => i + 1); setShow(true); } }, 400); }, 1600);
     return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, done]);
 
   const tap = () => {
