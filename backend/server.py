@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -71,6 +71,11 @@ class ChatMessage(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     session_id: str
+
+class GlowUpRequest(BaseModel):
+    image_base64: str
+    prompt: str
+    goals: str = ""
 
 # ==================== Routes ====================
 
@@ -377,6 +382,46 @@ async def seed_data():
         await db.community_posts.insert_one(post.model_dump())
     
     return {"message": "Sample data created"}
+
+# ==================== Glow Up ====================
+
+@api_router.post("/glow-up/generate")
+async def generate_glow_up(request: GlowUpRequest):
+    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+    try:
+        session_id = str(uuid.uuid4())
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=session_id,
+            system_message="You are a motivational AI that creates inspiring visual transformations showing people's healthy, vibrant best selves."
+        ).with_model("gemini", "gemini-2.0-flash-preview-image-generation").with_params(modalities=["image", "text"])
+
+        full_prompt = (
+            f"Transform this photo to show this person's best self after building these healthy habits: {request.goals}. "
+            f"Style: {request.prompt}. "
+            "Keep the person recognisable. Show them looking healthy, confident, energetic and vibrant. "
+            "This is an aspirational, motivational image. Improve lighting, posture, and vitality."
+        )
+
+        image_content = ImageContent(base64_data=request.image_base64)
+        msg = UserMessage(text=full_prompt, file_contents=[image_content])
+        text, images = await chat.send_message_multimodal_response(msg)
+
+        if images and len(images) > 0:
+            return {
+                "image_base64": images[0].get("data", ""),
+                "mime_type": images[0].get("mime_type", "image/png"),
+                "message": text or "Your transformation is ready!"
+            }
+        raise HTTPException(status_code=500, detail="No image was generated. Please try again.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Glow Up generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
+
 
 # Include the router in the main app
 app.include_router(api_router)

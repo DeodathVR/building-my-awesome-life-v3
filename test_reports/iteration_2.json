@@ -1,0 +1,51 @@
+{
+  "summary": "Frontend regression + new-pages testing for 6 new pages (Hub, Concentration Games, Glow Up, How To Use, Pricing, Admin). All 13 requested scenarios PASS. Hub replaces Home at /, 13 app-map cards render, all 13 nav links exist and route correctly. Admin gate rejects wrong password and accepts 'awesome2026' to show Articles/Games/Settings tabs; article creation persists to localStorage and appears in list. Concentration Games -> Challenge -> Game -> Number Flash flow works (input accepted). Glow Up wizard renders. How To Use tabs render. Pricing shows 3 tier cards + monthly/annual toggle. Habits, AI Coach, and Focus legacy pages still load fine.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Pricing", "issues": ["Annual/Monthly toggle has no data-testid — suggest adding 'annual-toggle' and 'monthly-toggle' for future automated tests"]},
+      {"screen": "Dev HMR", "issues": ["Browser console shows 'WebSocket connection to ws://localhost:443/ws failed' due to WDS_SOCKET_PORT=443 in frontend/.env — harmless in the preview container but noisy; can be removed or set to the real port"]}
+    ]
+  },
+  "passed_tests": [
+    "Hub page loads at / with nav, stats cards (streak/plan/games/level/pages), 14-day focus heatmap, today's quote, and App Map grid with exactly 13 page cards",
+    "All 13 desktop nav links present (Hub, Habits, Focus, Games, Glow Up, Feed, Conspiracy, Learn, Community, AI Coach, Pricing, Guide, Admin)",
+    "Clicking nav-games routes to /concentration-games and page renders with 3 challenges",
+    "Clicking a challenge switches to game list screen",
+    "Number Flash game: number flashes, input appears with data-testid='number-flash-input', submit accepted",
+    "Glow Up page loads at /glow-up with multi-step wizard (photo drop zone visible on step 0)",
+    "How To Use page loads at /how-to-use with feature tabs (guide-tab-*)",
+    "Pricing page loads at /pricing with 3 price cards (Free, Pro, Family) and Monthly/Annual toggle",
+    "Admin page at /admin shows password gate (admin-login-page)",
+    "Wrong password keeps the gate shown; 'awesome2026' unlocks and shows admin-page with Articles/Games/Settings tabs",
+    "Create Article flow: + New Article -> fill title+body -> Save -> article appears in list with 'draft' status and persists in localStorage (alu_admin_articles)",
+    "/habits legacy page still renders",
+    "/coach legacy page still renders",
+    "/focus legacy page still renders"
+  ],
+  "test_report_links": [],
+  "action_items": [
+    "OPTIONAL: Add data-testid='annual-toggle' / 'monthly-toggle' on the Pricing toggle buttons and data-testid='get-started-free' on the Free tier's Link (consistency with other select-* buttons)",
+    "OPTIONAL: Remove or correct WDS_SOCKET_PORT=443 in /app/frontend/.env to silence the websocket dev-server error in the browser console"
+  ],
+  "critical_code_review_comments": [
+    "HubPage.jsx is ~230 lines of heavily inlined styles in one file — readable but would benefit from extracting ALL_PAGES and BADGE_STYLES into a separate module for reuse / testability",
+    "AdminPage.jsx holds three tab components (Articles, Games, Settings) in a single 337-line file — consider splitting into /components/admin/*.jsx for maintainability",
+    "Admin password is hardcoded client-side (ADMIN_PASS = 'awesome2026' in AdminPage.jsx). Anyone can read it in the bundle. This is a client-only app so it is not a real auth boundary — main agent should document this clearly or gate destructive ops on the backend",
+    "Article 'Change Password' flow in SettingsTab is non-functional by design (message says 'session-only') — consider hiding the form or replacing with a 'not available in this build' notice to avoid user confusion",
+    "Navigation.jsx uses hard-coded indexes for the mobile bottom nav: [navItems[0], navItems[1], navItems[3], navItems[4], navItems[9]] — if navItems order changes this silently breaks. Prefer picking items by path.",
+    "No REACT_APP_BACKEND_URL is defined in /app/frontend/.env even though Glow Up docs mention POST /api/glow-up/generate. If/when backend is wired, this env var must be added (matches platform contract)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only request)", "frontend": "100% (13/13 requested scenarios)"},
+  "test_credentials": "Admin password: awesome2026 (hardcoded in /app/frontend/src/pages/AdminPage.jsx)",
+  "seed_data_creation": "Created one article via UI with title 'TEST_MyArticle' stored in localStorage key 'alu_admin_articles' during testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All new pages and routes verified. data-testids available: hub-page, page-card-<id> (13 cards), nav-<label>, concentration-games-page, challenge-<id>, game-<id>, number-flash-input/submit/done, glow-up-page, photo-drop-zone, goal-<id>, style-<id>, generate-btn, how-to-use-page, guide-tab-<id>, pricing-page, select-pro/select-family (NOTE: Free tier has NO select-* testid, it uses a plain Link to '/'), admin-login-page, admin-password-input, admin-login-btn, admin-page, admin-tab-articles/games/settings, new-article-btn, article-title-input, article-body-input, save-article-btn. WebSocket dev error 'ws://localhost:443/ws' is harmless."
+}

@@ -5,7 +5,7 @@ import { AppProvider } from "./context/AppContext";
 import { Toaster } from "./components/ui/sonner";
 import Navigation from "./components/Navigation";
 import VoiceCommandCenter from "./components/VoiceCommandCenter";
-import HomePage from "./pages/HomePage";
+import HubPage from "./pages/HubPage";
 import HabitsPage from "./pages/HabitsPage";
 import { Exercises } from "./pages/Exercises";
 import { ExercisePlayer } from "./pages/ExercisePlayer";
@@ -14,6 +14,11 @@ import CommunityPage from "./pages/CommunityPage";
 import AICoachPage from "./pages/AICoachPage";
 import AwesomeFeedPage from "./pages/AwesomeFeedPage";
 import SuccessConspiracyPage from "./pages/SuccessConspiracyPage";
+import ConcentrationGamesPage from "./pages/ConcentrationGamesPage";
+import GlowUpPage from "./pages/GlowUpPage";
+import HowToUsePage from "./pages/HowToUsePage";
+import PricingPage from "./pages/PricingPage";
+import AdminPage from "./pages/AdminPage";
 
 function App() {
   return (
@@ -23,7 +28,7 @@ function App() {
           <Navigation />
           <main>
             <Routes>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<HubPage />} />
               <Route path="/habits" element={<HabitsPage />} />
               <Route path="/focus" element={<Exercises />} />
               <Route path="/exercise/:exerciseId" element={<ExercisePlayer />} />
@@ -32,6 +37,11 @@ function App() {
               <Route path="/education" element={<EducationPage />} />
               <Route path="/community" element={<CommunityPage />} />
               <Route path="/coach" element={<AICoachPage />} />
+              <Route path="/concentration-games" element={<ConcentrationGamesPage />} />
+              <Route path="/glow-up" element={<GlowUpPage />} />
+              <Route path="/how-to-use" element={<HowToUsePage />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/admin" element={<AdminPage />} />
             </Routes>
           </main>
           <VoiceCommandCenter />
