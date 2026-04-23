@@ -16,9 +16,8 @@ import {
 
 const AppContext = createContext();
 
-// Gemini API configuration
-const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+// Backend URL for API calls
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // Collection references
 const HABITS_COLLECTION = 'habits';
@@ -450,55 +449,28 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Chat with AI coach (using Gemini API directly)
+  // Chat with AI coach (via backend to avoid PostHog fetch interception)
   const chatWithCoach = async (message, sessionId = null) => {
     try {
-      if (!GEMINI_API_KEY) {
-        throw new Error('Gemini API key not configured');
-      }
-
-      const systemPrompt = `You are a supportive and knowledgeable AI habit coach. Your role is to:
-- Help users build and maintain positive habits
-- Provide encouragement and motivation
-- Offer practical tips for habit formation based on behavioral science
-- Be empathetic and understanding of struggles
-- Celebrate wins, no matter how small
-- Keep responses concise but helpful (2-3 paragraphs max)
-
-Current user habits: ${habits.map(h => h.name).join(', ')}`;
-
-      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(`${BACKEND_URL}/api/ai-coach`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\n\nUser: ${message}` }] }],
-          generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 1024 }
+          message,
+          habits: habits.map(h => h.name),
+          session_id: sessionId
         })
       });
 
-      // Use .text() + JSON.parse() instead of .json() to avoid
-      // "body stream already read" errors that occur in React 19 production builds
-      const rawText = await response.text();
-      let data;
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        throw new Error(`API request failed (status ${response.status})`);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || `Request failed with status ${response.status}`);
       }
 
-      if (!response.ok || data.error) {
-        const err = data.error || {};
-        if (err.code === 429) throw new Error('API quota exceeded. Please try again later.');
-        if (err.code === 403) throw new Error('API key invalid or missing permissions.');
-        throw new Error(err.message || `Request failed with status ${response.status}`);
-      }
-
-      const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 
-        "I'm having trouble responding right now. Please try again.";
-
+      const data = await response.json();
       return {
-        response: aiResponse,
-        session_id: sessionId || generateId()
+        response: data.response || "I'm having trouble responding right now. Please try again.",
+        session_id: data.session_id || sessionId || generateId()
       };
     } catch (err) {
       console.error('Error chatting with coach:', err);

@@ -160,13 +160,13 @@ const VoiceCommandCenter = () => {
               <DialogTitle className="font-heading text-2xl">Voice Commands</DialogTitle>
             </DialogHeader>
             
-            {/* Beta Disclaimer */}
+            {/* Best results note - no longer Beta */}
             <div className="flex items-start gap-3 p-3 bg-accent/20 rounded-xl mt-2">
               <AlertTriangle className="w-5 h-5 text-accent-foreground flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-sm text-accent-foreground">Beta Feature</p>
+                <p className="font-medium text-sm text-accent-foreground">Voice Commands</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Voice commands are in beta. Best results in Chrome/Edge with a clear microphone. 
+                  Best results in Chrome/Edge with a clear microphone.
                   Accuracy may vary with accents or background noise.
                 </p>
               </div>
@@ -210,10 +210,6 @@ const VoiceCommandCenter = () => {
 
         {/* Main Voice Button */}
         <div className="relative">
-          {/* Beta badge */}
-          <span className="absolute -top-2 -right-1 px-1.5 py-0.5 bg-accent text-accent-foreground text-[10px] font-bold rounded-full z-10">
-            BETA
-          </span>
           <button
             onClick={handleMicClick}
             disabled={!isSupported}

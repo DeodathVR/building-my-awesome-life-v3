@@ -383,7 +383,48 @@ async def seed_data():
     
     return {"message": "Sample data created"}
 
-# ==================== Glow Up ====================
+class AICoachRequest(BaseModel):
+    message: str
+    habits: List[str] = []
+    session_id: Optional[str] = None
+
+@api_router.post("/ai-coach")
+async def ai_coach_chat(request: AICoachRequest):
+    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+    try:
+        session_id = request.session_id or str(uuid.uuid4())
+        habits_text = ', '.join(request.habits) if request.habits else 'none tracked yet'
+        system_message = (
+            "You are a supportive and knowledgeable AI habit coach. Your role is to: "
+            "help users build and maintain positive habits, provide encouragement and motivation, "
+            "offer practical tips for habit formation based on behavioral science, "
+            "be empathetic and understanding of struggles, celebrate wins no matter how small, "
+            "and keep responses concise but helpful (2-3 paragraphs max). "
+            f"Current user habits: {habits_text}"
+        )
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=session_id,
+            system_message=system_message
+        ).with_model("gemini", "gemini-2.0-flash")
+
+        msg = UserMessage(text=request.message)
+        response = await chat.send_message(msg)
+
+        return {
+            "response": response,
+            "session_id": session_id
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"AI Coach error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI Coach failed: {str(e)}")
+
+
+
 
 @api_router.post("/glow-up/generate")
 async def generate_glow_up(request: GlowUpRequest):

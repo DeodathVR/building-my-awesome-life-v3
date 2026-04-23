@@ -26,7 +26,7 @@ function App() {
       <div className="App min-h-screen bg-background">
         <BrowserRouter>
           <Navigation />
-          <main>
+          <main className="pb-24 md:pb-0">
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/habits" element={<HabitsPage />} />
