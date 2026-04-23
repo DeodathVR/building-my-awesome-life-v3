@@ -159,13 +159,34 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
 - Dark mode implementation
 - Additional focus exercises
 
-## Updates - April 2025 (v1.4)
+## Updates - April 2025 (v1.5) — 6 New Pages
 
-### AI Features Restored
-- Replaced blocked/leaked Gemini API key with new valid key in `frontend/.env`
-- AI Coach (Gemini 2.5 Flash) is fully operational again
-- Success Conspiracy Cosmic Reframer AI feature is operational again
+### New Pages Added
+- **Hub Dashboard** (`/`) — Replaces HomePage. Stats, 14-day activity heatmap, motivational quote, App Map of all 13 pages
+- **Concentration Games** (`/concentration-games`) — 3 challenge types, 5 mini-games (Number Flash, Math Sprint, Box Breathing, One Focus, 10 Rep), XP system with levels
+- **Glow Up** (`/glow-up`) — AI photo transformation wizard (upload → goals → style → generate). Calls backend `/api/glow-up/generate` with Gemini image generation. Free users get 1 transformation, Pro users get unlimited
+- **How To Use** (`/how-to-use`) — Interactive onboarding guide with getting-started checklist, feature tabs, pro tips, Free vs Pro comparison, FAQ
+- **Pricing** (`/pricing`) — 3-tier pricing (Free / Pro $9.99 / Family $19.99) with monthly/annual toggle, comparison table, testimonials, FAQ
+- **Admin Panel** (`/admin`) — Password-protected (password: `awesome2026`) content manager for articles and custom games using localStorage
+
+### Navigation Updated
+- All 13 pages now appear in the compact desktop navigation bar
+- Mobile navigation updated with grid dropdown and new bottom nav items
+
+### Backend Updated
+- Added `/api/glow-up/generate` POST endpoint using Gemini `gemini-2.0-flash-preview-image-generation` via emergentintegrations
+- Added `ImageContent` import from emergentintegrations
+
+### Known Limitations
+- Admin password is client-side only (in JS bundle) — fine for single-user app
+- Admin "Change Password" form is session-only (not persisted)
+- Glow Up requires internet + valid EMERGENT_LLM_KEY for image generation
 
 ### Next Action Items (P1)
 - Migrate Awesome Feed videos from hardcoded React arrays to Firestore `feed_content` collection
 - Migrate Education content from hardcoded arrays to Firestore `educational_content` collection
+
+### Upcoming Tasks (P2)
+- Improve Voice Command reliability
+- Implement browser notification reminders
+- Flesh out Community Challenges UI

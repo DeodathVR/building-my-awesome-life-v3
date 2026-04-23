@@ -192,8 +192,8 @@ export default function PricingPage() {
             Start free. Upgrade when you're ready to unlock the full power of your habit ecosystem.
           </p>
           <div className="toggle-wrap">
-            <button className={`toggle-btn${!annual ? ' active' : ''}`} onClick={() => setAnnual(false)}>Monthly</button>
-            <button className={`toggle-btn${annual ? ' active' : ''}`} onClick={() => setAnnual(true)}>
+            <button className={`toggle-btn${!annual ? ' active' : ''}`} onClick={() => setAnnual(false)} data-testid="monthly-toggle">Monthly</button>
+            <button className={`toggle-btn${annual ? ' active' : ''}`} onClick={() => setAnnual(true)} data-testid="annual-toggle">
               Annual <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, background: 'linear-gradient(135deg,var(--primary),var(--primary-d))', color: '#fff', padding: '1px 7px', borderRadius: 20 }}>−17%</span>
             </button>
           </div>
