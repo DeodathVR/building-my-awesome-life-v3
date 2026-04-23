@@ -469,39 +469,28 @@ Current user habits: ${habits.map(h => h.name).join(', ')}`;
 
       const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `${systemPrompt}\n\nUser: ${message}`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          }
+          contents: [{ parts: [{ text: `${systemPrompt}\n\nUser: ${message}` }] }],
+          generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 1024 }
         })
       });
 
-      const data = await response.json();
-
-      // Check for API errors
-      if (data.error) {
-        console.error('Gemini API Error:', data.error);
-        if (data.error.code === 429) {
-          throw new Error('API quota exceeded. Please try again later or check your billing at https://ai.google.dev');
-        } else if (data.error.code === 404) {
-          throw new Error('Model not found. The API model may have been updated.');
-        }
-        throw new Error(data.error.message || 'Failed to get response from AI');
+      // Use .text() + JSON.parse() instead of .json() to avoid
+      // "body stream already read" errors that occur in React 19 production builds
+      const rawText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(`API request failed (status ${response.status})`);
       }
 
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+      if (!response.ok || data.error) {
+        const err = data.error || {};
+        if (err.code === 429) throw new Error('API quota exceeded. Please try again later.');
+        if (err.code === 403) throw new Error('API key invalid or missing permissions.');
+        throw new Error(err.message || `Request failed with status ${response.status}`);
       }
 
       const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 
