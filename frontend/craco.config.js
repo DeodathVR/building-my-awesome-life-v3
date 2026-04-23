@@ -1,4 +1,22 @@
 // craco.config.js
+
+// ─── Fix: stub ForkTsCheckerWebpackPlugin ────────────────────────────────────
+// fork-ts-checker-webpack-plugin (bundled with react-scripts) loads schema-utils@3
+// which calls ajv-keywords with `formatMinimum` — a keyword removed in ajv-keywords@5.
+// This app has no TypeScript files, so TypeScript type-checking is not needed.
+// Stubbing the plugin prevents the crash on Node 20/22/24 without breaking the build.
+const Module = require("module");
+const _originalLoad = Module._load;
+Module._load = function (request, parent, isMain) {
+  if (request === "fork-ts-checker-webpack-plugin") {
+    return class ForkTsCheckerWebpackPlugin {
+      apply() {}
+    };
+  }
+  return _originalLoad.apply(this, arguments);
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
 const path = require("path");
 require("dotenv").config();
 
