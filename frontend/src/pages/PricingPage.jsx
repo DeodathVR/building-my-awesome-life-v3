@@ -12,7 +12,7 @@ const TIERS = [
     featured: false,
     features: [
       { label: 'Habit tracking (unlimited habits)', included: true },
-      { label: 'Hub dashboard', included: true },
+      { label: 'Home dashboard', included: true },
       { label: 'Community access', included: true },
       { label: '5 starter focus games (1 per type)', included: true },
       { label: 'AI Coach — 5 messages/day', included: 'partial', note: '5/day' },
@@ -32,7 +32,7 @@ const TIERS = [
     featured: true, badge: 'Most Popular',
     features: [
       { label: 'Habit tracking (unlimited habits)', included: true },
-      { label: 'Hub dashboard', included: true },
+      { label: 'Home dashboard', included: true },
       { label: 'Community access', included: true },
       { label: '5 starter focus games (1 per type)', included: true },
       { label: 'AI Coach — unlimited', included: true },
@@ -52,7 +52,7 @@ const TIERS = [
     featured: false, badge: 'Best Value',
     features: [
       { label: 'Habit tracking (unlimited habits)', included: true },
-      { label: 'Hub dashboard', included: true },
+      { label: 'Home dashboard', included: true },
       { label: 'Community access', included: true },
       { label: '5 starter focus games (1 per type)', included: true },
       { label: 'AI Coach — unlimited', included: true },
@@ -214,7 +214,7 @@ export default function PricingPage() {
             </div>
             {[
               ['Habit tracking', true, true, true],
-              ['Hub dashboard', true, true, true],
+              ['Home dashboard', true, true, true],
               ['Community access', true, true, true],
               ['Starter focus games (5)', true, true, true],
               ['All 10 focus mini-games', false, true, true],

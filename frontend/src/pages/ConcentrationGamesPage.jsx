@@ -928,7 +928,7 @@ export default function ConcentrationGamesPage() {
           <div className="au" style={{ textAlign: 'center', padding: '40px 0' }}>
             <div style={{ fontSize: 56, marginBottom: 16 }}>🌟</div>
             <h2 className="fh" style={{ fontSize: 30, fontWeight: 700, marginBottom: 12, color: 'var(--g-text)' }}>Keep the streak going!</h2>
-            <p style={{ color: 'var(--g-muted)', marginBottom: 28, lineHeight: 1.7 }}>Every game makes your focus stronger. Play another or check your Hub.</p>
+            <p style={{ color: 'var(--g-muted)', marginBottom: 28, lineHeight: 1.7 }}>Every game makes your focus stronger. Play another or check your Home.</p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button className="btn-g" onClick={() => { setScreen('home'); setSelCh(null); setSelGame(null); }} data-testid="play-again">Play Another</button>
               <Link to="/"><button className="btn-g-o">Go to Home</button></Link>

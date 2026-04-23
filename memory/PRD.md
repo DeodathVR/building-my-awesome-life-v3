@@ -24,6 +24,16 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
 - [x] Dark mode toggle
 - [x] Mobile responsive design
 
+## Changelog — Feb 2026
+- **Feb 2026**: Renamed "Hub" → "Home" throughout UI & routing
+  - `HubPage.jsx` → `HomePage.jsx` (component/default export renamed)
+  - `Navigation.jsx` label "Hub" → "Home"
+  - `App.js` import updated
+  - All references in `PricingPage.jsx`, `HowToUsePage.jsx`, `ConcentrationGamesPage.jsx` updated
+  - Removed orphaned old `HomePage.jsx` (habits-centric, unreferenced)
+- **Feb 2026**: Full 15-game Concentration Games with dark neon gaming UI (`/app/frontend/src/pages/games-page.css`) — 5 challenges × 3 games each (Memory Recall, Speed Focus, Deep Work Sprint, Single Tab Rule, Micro Workout). 5 games free, 10 gated behind Pro.
+
+
 ## What's Been Implemented (January 15, 2025)
 ### Backend (16 API endpoints)
 - `/api/habits` - Full CRUD + bulk logging

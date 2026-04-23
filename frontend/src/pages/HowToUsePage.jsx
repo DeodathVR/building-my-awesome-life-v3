@@ -5,7 +5,7 @@ import './shared-pages.css';
 const STEPS = [
   { id: 'create', label: 'Create your first habit', tip: 'Go to the Habits page and click "+ Add Habit". Start with something tiny — 2 minutes max.' },
   { id: 'complete', label: 'Complete a habit today', tip: 'Tap the circle on any habit card to log today\'s completion.' },
-  { id: 'hub', label: 'Explore the Hub dashboard', tip: 'The Hub links to every feature. Bookmark it as your daily home base.' },
+  { id: 'home', label: 'Explore the Home dashboard', tip: 'The Home dashboard links to every feature. Bookmark it as your daily home base.' },
   { id: 'game', label: 'Play a Concentration Game', tip: 'Try Number Flash first — it\'s a quick 30-second warm-up that sharpens focus.' },
   { id: 'coach', label: 'Chat with your AI Coach', tip: 'Ask "What\'s one habit I should build this week?" for a personalised plan.' },
   { id: 'glow', label: 'Try the Glow Up feature', tip: 'Upload a photo and set your goals to see your best self visualised by AI.' },
@@ -187,7 +187,7 @@ export default function HowToUsePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }} className="resp-grid-3">
             {[
               { icon: '🔗', t: 'Habit Stack', d: 'Attach new habits to existing ones. "After my morning coffee, I will..." works 60% better than standalone habits.' },
-              { icon: '📱', t: 'Use the Hub daily', d: 'Make the Hub your browser homepage. Seeing your streak every morning creates a powerful visual anchor.' },
+              { icon: '📱', t: 'Use the Home dashboard daily', d: 'Make the Home dashboard your browser homepage. Seeing your streak every morning creates a powerful visual anchor.' },
               { icon: '🎮', t: 'Games before work', d: 'Play one Concentration Game before starting deep work. It primes your prefrontal cortex for focus.' },
               { icon: '✨', t: 'Revisit your Glow Up', d: 'Look at your Glow Up transformation every morning. Visual motivation is more powerful than written goals.' },
               { icon: '🤖', t: 'Weekly AI check-in', d: 'Ask the AI Coach "How have my habits changed this week?" every Sunday for a reflective review.' },

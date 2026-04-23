@@ -5,7 +5,7 @@ import { AppProvider } from "./context/AppContext";
 import { Toaster } from "./components/ui/sonner";
 import Navigation from "./components/Navigation";
 import VoiceCommandCenter from "./components/VoiceCommandCenter";
-import HubPage from "./pages/HubPage";
+import HomePage from "./pages/HomePage";
 import HabitsPage from "./pages/HabitsPage";
 import { Exercises } from "./pages/Exercises";
 import { ExercisePlayer } from "./pages/ExercisePlayer";
@@ -28,7 +28,7 @@ function App() {
           <Navigation />
           <main>
             <Routes>
-              <Route path="/" element={<HubPage />} />
+              <Route path="/" element={<HomePage />} />
               <Route path="/habits" element={<HabitsPage />} />
               <Route path="/focus" element={<Exercises />} />
               <Route path="/exercise/:exerciseId" element={<ExercisePlayer />} />

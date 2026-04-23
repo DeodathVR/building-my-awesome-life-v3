@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { Button } from './ui/button';
 
 const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Hub' },
+  { path: '/', icon: LayoutDashboard, label: 'Home' },
   { path: '/habits', icon: Target, label: 'Habits' },
   { path: '/focus', icon: Focus, label: 'Focus' },
   { path: '/concentration-games', icon: Gamepad2, label: 'Games' },
