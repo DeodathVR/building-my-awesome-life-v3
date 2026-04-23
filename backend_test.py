@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import time
 
 class HabitsAPITester:
-    def __init__(self, base_url="https://mindful-focus-28.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://mindful-focus-30.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
