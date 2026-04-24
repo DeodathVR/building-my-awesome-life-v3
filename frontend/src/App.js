@@ -24,28 +24,19 @@ import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
 
 // Wraps everything that requires auth + per-user data
-const AuthedApp = () => (
+const AuthedLayout = ({ children }) => (
   <AppProvider>
     <Navigation />
-    <main className="pb-24 md:pb-0">
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/habits" element={<HabitsPage />} />
-        <Route path="/focus" element={<Exercises />} />
-        <Route path="/exercise/:exerciseId" element={<ExercisePlayer />} />
-        <Route path="/feed" element={<AwesomeFeedPage />} />
-        <Route path="/conspiracy" element={<SuccessConspiracyPage />} />
-        <Route path="/education" element={<EducationPage />} />
-        <Route path="/community" element={<CommunityPage />} />
-        <Route path="/coach" element={<AICoachPage />} />
-        <Route path="/concentration-games" element={<ConcentrationGamesPage />} />
-        <Route path="/glow-up" element={<GlowUpPage />} />
-        <Route path="/how-to-use" element={<HowToUsePage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
-      </Routes>
-    </main>
+    <main className="pb-24 md:pb-0">{children}</main>
     <VoiceCommandCenter />
+  </AppProvider>
+);
+
+// Public pages still get navigation (logged-out state) but no VoiceCommandCenter / AppProvider
+const PublicLayout = ({ children }) => (
+  <AppProvider>
+    <Navigation />
+    <main className="pb-24 md:pb-0">{children}</main>
   </AppProvider>
 );
 
@@ -55,15 +46,24 @@ function App() {
       <div className="App min-h-screen bg-background">
         <BrowserRouter>
           <Routes>
+            {/* Public — logged-out users can browse */}
             <Route path="/auth" element={<PublicOnlyRoute><AuthPage /></PublicOnlyRoute>} />
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <AuthedApp />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/pricing" element={<PublicLayout><PricingPage /></PublicLayout>} />
+            <Route path="/how-to-use" element={<PublicLayout><HowToUsePage /></PublicLayout>} />
+            <Route path="/education" element={<PublicLayout><EducationPage /></PublicLayout>} />
+
+            {/* Protected — requires login */}
+            <Route path="/" element={<ProtectedRoute><AuthedLayout><HomePage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/habits" element={<ProtectedRoute><AuthedLayout><HabitsPage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/focus" element={<ProtectedRoute><AuthedLayout><Exercises /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/exercise/:exerciseId" element={<ProtectedRoute><AuthedLayout><ExercisePlayer /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/feed" element={<ProtectedRoute><AuthedLayout><AwesomeFeedPage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/conspiracy" element={<ProtectedRoute><AuthedLayout><SuccessConspiracyPage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/community" element={<ProtectedRoute><AuthedLayout><CommunityPage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/coach" element={<ProtectedRoute><AuthedLayout><AICoachPage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/concentration-games" element={<ProtectedRoute><AuthedLayout><ConcentrationGamesPage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/glow-up" element={<ProtectedRoute><AuthedLayout><GlowUpPage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminRoute><AuthedLayout><AdminPage /></AuthedLayout></AdminRoute>} />
           </Routes>
         </BrowserRouter>
         <Toaster

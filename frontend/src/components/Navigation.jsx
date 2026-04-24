@@ -99,7 +99,7 @@ const Navigation = () => {
                   <Moon className="w-4 h-4" strokeWidth={1.5} />
                 )}
               </Button>
-              {user && (
+              {user ? (
                 <div className="relative">
                   <button
                     onClick={() => setUserMenuOpen(o => !o)}
@@ -131,6 +131,10 @@ const Navigation = () => {
                     </>
                   )}
                 </div>
+              ) : (
+                <Link to="/auth" data-testid="nav-signin-btn" className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity">
+                  Sign in
+                </Link>
               )}
             </div>
           </div>
@@ -156,7 +160,7 @@ const Navigation = () => {
             >
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
-            {user && (
+            {user ? (
               <Button
                 variant="ghost"
                 size="icon"
@@ -167,6 +171,10 @@ const Navigation = () => {
               >
                 <LogOut className="w-5 h-5" />
               </Button>
+            ) : (
+              <Link to="/auth" data-testid="mobile-signin-btn" className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                Sign in
+              </Link>
             )}
             <Button
               variant="ghost"
