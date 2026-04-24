@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Heart, Share2, Bookmark, Play, Pause, RefreshCw, Sparkles, MessageCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useApp } from '../context/AppContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { fetchFeedPosts, generateDailyFeed, hasGeneratedToday, seedContentIfEmpty } from '../services/contentService';
 
 // Mini Daisy Animation Component for feed
 const MiniDaisyBloom = ({ animate }) => (
@@ -89,85 +90,63 @@ const CosmicParticles = () => (
   </div>
 );
 
-// Feed content data
-const generateFeedContent = () => [
-  {
-    id: 1,
-    type: 'conspiracy',
-    category: 'Witty Conspiracy',
-    visual: 'lotus',
-    text: "Missed your alarm? Universe just gifted you extra bloom time. You're worth waiting for. 🌸",
-    subtext: "Today's Success Conspiracy",
-    gradient: 'from-primary/20 via-transparent to-transparent'
-  },
-  {
-    id: 2,
-    type: 'reframe',
-    category: 'Awesome Reframe',
-    visual: 'daisy',
-    text: "That rainy day? Perfect setup for cozy habit stacking.",
-    subtext: "Reframe your perspective",
-    gradient: 'from-accent/20 via-transparent to-transparent'
-  },
-  {
-    id: 3,
-    type: 'affirmation',
-    category: 'Bloom Moment',
-    visual: 'circle',
-    text: "Breathe in possibility... Exhale doubt... The universe cheers your next step.",
-    subtext: "60-second bloom session",
-    gradient: 'from-secondary/30 via-transparent to-transparent'
-  },
-  {
-    id: 4,
-    type: 'quickwin',
-    category: 'Quick Win Spotlight',
-    visual: 'stats',
-    text: "Someone turned a delay into a 5-day streak. Your turn?",
-    subtext: "Community inspiration",
-    streak: 5,
-    gradient: 'from-primary/20 via-transparent to-transparent'
-  },
-  {
-    id: 5,
-    type: 'cosmic',
-    category: 'Cosmic Teaser',
-    visual: 'cosmic',
-    text: "Hey superstar, you're doing better than you think—keep blooming. ✨",
-    subtext: "AI Coach whisper",
-    gradient: 'from-purple-500/20 via-transparent to-transparent'
-  },
-  {
-    id: 6,
-    type: 'conspiracy',
-    category: 'Witty Conspiracy',
-    visual: 'daisy',
-    text: "Late to the meeting? The universe needed everyone to take a breath before your brilliance arrived.",
-    subtext: "Today's Success Conspiracy",
-    gradient: 'from-accent/20 via-transparent to-transparent'
-  },
-  {
-    id: 7,
-    type: 'affirmation',
-    category: 'Bloom Moment',
-    visual: 'lotus',
-    text: "Every petal that opens is a worry released. Watch, breathe, bloom.",
-    subtext: "Morning affirmation",
-    gradient: 'from-primary/20 via-transparent to-transparent'
-  }
-];
+// Feed content now loaded from Firestore via contentService
+const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
 const AwesomeFeedPage = () => {
   const navigate = useNavigate();
   const { habits, stats } = useApp();
-  const [feedItems, setFeedItems] = useState(generateFeedContent());
+  const [feedItems, setFeedItems] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [savedItems, setSavedItems] = useState([]);
   const [likedItems, setLikedItems] = useState([]);
   const [isAnimating, setIsAnimating] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [loadingFeed, setLoadingFeed] = useState(true);
+  const [generatingDaily, setGeneratingDaily] = useState(false);
   const containerRef = useRef(null);
   const touchStartY = useRef(0);
+
+  const loadFeed = useCallback(async () => {
+    try {
+      const posts = await fetchFeedPosts({ activeOnly: true });
+      setFeedItems(shuffle(posts));
+      setCurrentIndex(0);
+    } catch (e) {
+      console.error('Load feed failed:', e);
+    }
+  }, []);
+
+  // Initial load + auto daily generation trigger
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoadingFeed(true);
+      // Ensure collections exist with evergreen seed
+      await seedContentIfEmpty();
+      await loadFeed();
+      if (cancelled) return;
+      setLoadingFeed(false);
+
+      // Fire-and-forget: daily generation if not yet done today
+      try {
+        const already = await hasGeneratedToday();
+        if (!already) {
+          setGeneratingDaily(true);
+          const result = await generateDailyFeed({ source: 'auto' });
+          if (!cancelled && result && !result.skipped && result.count > 0) {
+            toast.success(`${result.count} fresh AI slides added ✨`);
+            await loadFeed();
+          }
+        }
+      } catch (e) {
+        console.warn('Daily gen skipped:', e.message);
+      } finally {
+        if (!cancelled) setGeneratingDaily(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [loadFeed]);
 
   // Auto-animate visuals
   useEffect(() => {
@@ -236,13 +215,26 @@ const AwesomeFeedPage = () => {
     toast.info('Starting a bloom session...');
   };
 
-  const handleRefresh = () => {
-    setFeedItems([...generateFeedContent()].sort(() => Math.random() - 0.5));
-    setCurrentIndex(0);
+  const handleRefresh = async () => {
+    await loadFeed();
     toast.success('Fresh inspiration loaded! ✨');
   };
 
   const currentItem = feedItems[currentIndex];
+
+  // Loading / empty state
+  if (loadingFeed || !currentItem) {
+    return (
+      <div className="fixed inset-0 bg-background z-40 flex items-center justify-center" data-testid="awesome-feed-loading">
+        <div className="text-center">
+          <Sparkles className="w-10 h-10 text-primary mx-auto mb-3 animate-pulse" />
+          <p className="text-sm text-muted-foreground">
+            {generatingDaily ? 'Generating today\'s fresh slides…' : 'Loading your feed…'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const renderVisual = (visual, animate) => {
     switch (visual) {

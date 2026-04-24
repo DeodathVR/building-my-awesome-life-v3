@@ -1,62 +1,17 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BookOpen, Lightbulb, Zap, Target, Clock, Layers, Play, ExternalLink } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
+import { fetchEducationTips, seedContentIfEmpty } from '../services/contentService';
 
-const habitTips = [
-  {
-    id: 'start-small',
-    title: 'Start Small',
-    icon: Target,
-    content: 'Make your habits so tiny they\'re impossible to fail. Want to meditate? Start with just one breath. Reading? One page. Exercise? One pushup. The goal is consistency, not intensity.',
-    source: 'Atomic Habits'
-  },
-  {
-    id: 'habit-stacking',
-    title: 'Habit Stacking',
-    icon: Layers,
-    content: 'Link new habits to existing routines. Formula: "After I [CURRENT HABIT], I will [NEW HABIT]." Example: After I pour my morning coffee, I will write one thing I\'m grateful for.',
-    source: 'Atomic Habits'
-  },
-  {
-    id: 'environment-design',
-    title: 'Environment Design',
-    icon: Lightbulb,
-    content: 'Make good habits obvious and easy. Put your book on your pillow. Keep your yoga mat rolled out. Make bad habits invisible and difficult. Remove junk food from sight.',
-    source: 'Atomic Habits'
-  },
-  {
-    id: 'two-minute-rule',
-    title: 'The Two-Minute Rule',
-    icon: Clock,
-    content: 'When you start a new habit, it should take less than two minutes to do. "Read before bed" becomes "Read one page." The point is to master showing up.',
-    source: 'Atomic Habits'
-  },
-  {
-    id: 'never-miss-twice',
-    title: 'Never Miss Twice',
-    icon: Zap,
-    content: 'Missing one day won\'t hurt you. Missing two begins a new streak—of not doing the habit. If you miss once, get back on track immediately. Perfection isn\'t required.',
-    source: 'Atomic Habits'
-  }
-];
+// Map string icon names (stored in Firestore) to lucide components
+const ICON_MAP = { Target, Layers, Lightbulb, Clock, Zap, BookOpen };
+const getIcon = (name) => ICON_MAP[name] || Lightbulb;
 
-const focusExplanations = [
-  {
-    title: 'Why Lotus Observation Works',
-    content: 'Slow, natural visuals like a lotus blooming train your attention span by giving your brain a gentle anchor. Unlike fast-moving content, these exercises strengthen your ability to sustain focus without overstimulation.'
-  },
-  {
-    title: 'The Science of Expanding Circles',
-    content: 'Rhythmic breathing exercises activate the parasympathetic nervous system, reducing cortisol and anxiety. The visual component provides a focus point that makes meditation accessible for beginners.'
-  },
-  {
-    title: 'Breath Counting Benefits',
-    content: 'Counting breaths creates a feedback loop between body and mind. Each counted breath is a small win that builds your concentration muscle, making it easier to focus on habits throughout the day.'
-  }
-];
+const habitTipsFallback = [];
+const focusExplanationsFallback = [];
 
 // Educational videos (embeddable YouTube videos about habits and mindfulness)
 const educationalVideos = [
@@ -88,6 +43,25 @@ const educationalVideos = [
 
 const EducationPage = () => {
   const [playingVideo, setPlayingVideo] = React.useState(null);
+  const [habitTips, setHabitTips] = useState(habitTipsFallback);
+  const [focusExplanations, setFocusExplanations] = useState(focusExplanationsFallback);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await seedContentIfEmpty();
+      const [habit, focus] = await Promise.all([
+        fetchEducationTips({ category: 'habit', activeOnly: true }),
+        fetchEducationTips({ category: 'focus', activeOnly: true }),
+      ]);
+      if (cancelled) return;
+      setHabitTips(habit);
+      setFocusExplanations(focus);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div className="min-h-screen pb-32 md:pb-8 px-6 py-8" data-testid="education-page">
@@ -172,8 +146,10 @@ const EducationPage = () => {
             </h2>
             
             <div className="grid gap-4 stagger-children">
-              {habitTips.map((tip) => {
-                const Icon = tip.icon;
+              {loading && habitTips.length === 0 ? (
+                <p className="text-sm text-muted-foreground" data-testid="education-loading">Loading tips…</p>
+              ) : habitTips.map((tip) => {
+                const Icon = getIcon(tip.icon);
                 return (
                   <Card 
                     key={tip.id} 
@@ -232,7 +208,7 @@ const EducationPage = () => {
               
               <Accordion type="single" collapsible className="w-full">
                 {focusExplanations.map((item, idx) => (
-                  <AccordionItem key={idx} value={`item-${idx}`}>
+                  <AccordionItem key={item.id || idx} value={`item-${item.id || idx}`}>
                     <AccordionTrigger className="text-left text-sm font-medium hover:no-underline">
                       {item.title}
                     </AccordionTrigger>

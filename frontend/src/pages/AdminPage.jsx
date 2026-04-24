@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import {
+  fetchFeedPosts, createFeedPost, updateFeedPost, deleteFeedPost,
+  fetchEducationTips, createEducationTip, updateEducationTip, deleteEducationTip,
+  generateDailyFeed, seedContentIfEmpty,
+} from '../services/contentService';
 import './shared-pages.css';
 
 const ADMIN_PASS = 'awesome2026';
@@ -226,6 +232,299 @@ function GamesTab() {
   );
 }
 
+function FeedTab() {
+  const [posts, setPosts] = useState([]);
+  const [form, setForm] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const FEED_TYPES = ['conspiracy', 'reframe', 'affirmation', 'quickwin', 'cosmic'];
+  const FEED_VISUALS = ['lotus', 'daisy', 'circle', 'stats', 'cosmic'];
+  const GRADIENTS = {
+    conspiracy: 'from-primary/20 via-transparent to-transparent',
+    reframe: 'from-accent/20 via-transparent to-transparent',
+    affirmation: 'from-secondary/30 via-transparent to-transparent',
+    quickwin: 'from-primary/20 via-transparent to-transparent',
+    cosmic: 'from-purple-500/20 via-transparent to-transparent',
+  };
+  const CATEGORY_LABEL = {
+    conspiracy: 'Witty Conspiracy', reframe: 'Awesome Reframe', affirmation: 'Bloom Moment',
+    quickwin: 'Quick Win Spotlight', cosmic: 'Cosmic Teaser',
+  };
+  const defaultPost = { type: 'affirmation', category: CATEGORY_LABEL.affirmation, visual: 'lotus', text: '', subtext: '', active: true };
+
+  const load = async () => {
+    setLoading(true);
+    await seedContentIfEmpty();
+    const list = await fetchFeedPosts({ activeOnly: false });
+    setPosts(list);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const submit = async () => {
+    if (!form.text.trim()) { toast.error('Text is required'); return; }
+    const gradient = GRADIENTS[form.type] || GRADIENTS.affirmation;
+    const payload = { ...form, gradient, category: form.category || CATEGORY_LABEL[form.type] };
+    try {
+      if (form.id) {
+        await updateFeedPost(form.id, payload);
+        toast.success('Post updated');
+      } else {
+        await createFeedPost(payload);
+        toast.success('Post created');
+      }
+      setForm(null);
+      await load();
+    } catch (e) { toast.error('Save failed: ' + e.message); }
+  };
+
+  const del = async (id) => {
+    if (!window.confirm('Delete this post?')) return;
+    try { await deleteFeedPost(id); toast.success('Deleted'); await load(); }
+    catch (e) { toast.error('Delete failed: ' + e.message); }
+  };
+
+  const toggleActive = async (p) => {
+    try { await updateFeedPost(p.id, { active: !p.active }); await load(); }
+    catch (e) { toast.error(e.message); }
+  };
+
+  const generate = async () => {
+    if (generating) return;
+    setGenerating(true);
+    try {
+      const res = await generateDailyFeed({ source: 'admin', force: true });
+      if (res.skipped) toast.info('Already generated today — forced new batch anyway');
+      toast.success(`Generated ${res.count} AI posts ✨`);
+      await load();
+    } catch (e) { toast.error('AI generation failed: ' + e.message); }
+    setGenerating(false);
+  };
+
+  if (form !== null) return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <button onClick={() => setForm(null)} className="btn-o" style={{ padding: '8px 16px' }}>← Back</button>
+        <h3 className="fh" style={{ fontSize: 20, fontWeight: 700 }}>{form.id ? 'Edit Feed Post' : 'New Feed Post'}</h3>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-fg)', display: 'block', marginBottom: 6 }}>TYPE</label>
+            <select className="fi" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value, category: CATEGORY_LABEL[e.target.value] }))}>
+              {FEED_TYPES.map(t => <option key={t} value={t}>{CATEGORY_LABEL[t]}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-fg)', display: 'block', marginBottom: 6 }}>VISUAL</label>
+            <select className="fi" value={form.visual} onChange={e => setForm(f => ({ ...f, visual: e.target.value }))}>
+              {FEED_VISUALS.map(v => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-fg)', display: 'block', marginBottom: 6 }}>MAIN TEXT *</label>
+          <textarea className="fi" rows={3} value={form.text} onChange={e => setForm(f => ({ ...f, text: e.target.value }))} placeholder="The main message..." data-testid="feed-text-input" />
+        </div>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-fg)', display: 'block', marginBottom: 6 }}>SUBTEXT</label>
+          <input className="fi" value={form.subtext || ''} onChange={e => setForm(f => ({ ...f, subtext: e.target.value }))} placeholder="Short tag line..." />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => setForm(f => ({ ...f, active: !f.active }))}>
+          <div style={{ width: 20, height: 20, borderRadius: 6, border: '2px solid var(--border)', background: form.active ? 'var(--primary)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {form.active && <span style={{ color: '#fff', fontSize: 12 }}>✓</span>}
+          </div>
+          <span style={{ fontSize: 14, fontWeight: 600 }}>Active (visible in feed)</span>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn-p" onClick={submit} data-testid="save-feed-btn">{form.id ? 'Save Changes' : 'Create Post'}</button>
+          <button className="btn-o" onClick={() => setForm(null)}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const filtered = posts.filter(p => (p.text || '').toLowerCase().includes(search.toLowerCase()) || (p.type || '').toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <h3 className="fh" style={{ fontSize: 20, fontWeight: 700 }}>Feed Posts</h3>
+          <p style={{ fontSize: 13, color: 'var(--muted-fg)', marginTop: 2 }}>
+            {posts.length} post{posts.length !== 1 ? 's' : ''} · auto-daily AI generation runs on first user visit
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <input className="fi" style={{ width: 180 }} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." />
+          <button className="btn-o" onClick={generate} disabled={generating} style={{ opacity: generating ? 0.6 : 1 }} data-testid="generate-ai-feed-btn">
+            {generating ? 'Generating…' : '✨ Generate 7 AI Posts'}
+          </button>
+          <button className="btn-p" onClick={() => setForm({ ...defaultPost })} data-testid="new-feed-btn">+ New Post</button>
+        </div>
+      </div>
+      {loading ? (
+        <p style={{ color: 'var(--muted-fg)', padding: 20 }}>Loading…</p>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted-fg)' }}>
+          <p style={{ fontSize: 32, marginBottom: 10 }}>📱</p>
+          <p style={{ fontWeight: 600 }}>No feed posts yet</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {filtered.map(p => (
+            <div key={p.id} className="content-item" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--primary-l)', color: 'var(--primary)', padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase' }}>{p.type}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, background: p.source === 'ai' || p.source === 'ai-admin' ? 'rgba(139,92,246,0.15)' : p.source === 'evergreen' ? 'rgba(77,182,172,.12)' : 'var(--muted)', color: p.source === 'ai' || p.source === 'ai-admin' ? '#8b5cf6' : p.source === 'evergreen' ? 'var(--primary)' : 'var(--muted-fg)', padding: '2px 8px', borderRadius: 20 }}>{p.source}</span>
+                  {!p.active && <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(239,68,68,.12)', color: '#ef4444', padding: '2px 8px', borderRadius: 20 }}>inactive</span>}
+                </div>
+                <p style={{ fontSize: 13, lineHeight: 1.5 }}>{p.text}</p>
+                {p.subtext && <p style={{ fontSize: 11, color: 'var(--muted-fg)', marginTop: 2 }}>{p.subtext}</p>}
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button onClick={() => toggleActive(p)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', color: 'var(--muted-fg)' }}>{p.active ? 'Hide' : 'Show'}</button>
+                <button onClick={() => setForm(p)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', color: 'var(--fg)' }} data-testid={`edit-feed-${p.id}`}>Edit</button>
+                <button onClick={() => del(p.id)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(239,68,68,.3)', background: 'transparent', cursor: 'pointer', color: '#ef4444' }} data-testid={`delete-feed-${p.id}`}>Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EducationTab() {
+  const [tips, setTips] = useState([]);
+  const [form, setForm] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const ICONS_EDU = ['Target', 'Layers', 'Lightbulb', 'Clock', 'Zap', 'BookOpen'];
+  const defaultTip = { category: 'habit', title: '', content: '', source: 'Atomic Habits', icon: 'Target', order: 100, active: true };
+
+  const load = async () => {
+    setLoading(true);
+    await seedContentIfEmpty();
+    const [h, f] = await Promise.all([
+      fetchEducationTips({ category: 'habit', activeOnly: false }),
+      fetchEducationTips({ category: 'focus', activeOnly: false }),
+    ]);
+    setTips([...h, ...f]);
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+
+  const submit = async () => {
+    if (!form.title.trim() || !form.content.trim()) { toast.error('Title and content required'); return; }
+    try {
+      if (form.id) { await updateEducationTip(form.id, form); toast.success('Updated'); }
+      else { await createEducationTip(form); toast.success('Created'); }
+      setForm(null); await load();
+    } catch (e) { toast.error(e.message); }
+  };
+  const del = async (id) => {
+    if (!window.confirm('Delete this tip?')) return;
+    try { await deleteEducationTip(id); toast.success('Deleted'); await load(); }
+    catch (e) { toast.error(e.message); }
+  };
+  const toggleActive = async (t) => {
+    try { await updateEducationTip(t.id, { active: !t.active }); await load(); }
+    catch (e) { toast.error(e.message); }
+  };
+
+  if (form !== null) return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <button onClick={() => setForm(null)} className="btn-o" style={{ padding: '8px 16px' }}>← Back</button>
+        <h3 className="fh" style={{ fontSize: 20, fontWeight: 700 }}>{form.id ? 'Edit Tip' : 'New Tip'}</h3>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-fg)', display: 'block', marginBottom: 6 }}>CATEGORY</label>
+            <select className="fi" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+              <option value="habit">Habit Tip</option>
+              <option value="focus">Focus Explanation</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-fg)', display: 'block', marginBottom: 6 }}>ICON</label>
+            <select className="fi" value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))}>
+              {ICONS_EDU.map(i => <option key={i}>{i}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-fg)', display: 'block', marginBottom: 6 }}>ORDER</label>
+            <input className="fi" type="number" value={form.order} onChange={e => setForm(f => ({ ...f, order: parseInt(e.target.value) || 100 }))} />
+          </div>
+        </div>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-fg)', display: 'block', marginBottom: 6 }}>TITLE *</label>
+          <input className="fi" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} data-testid="edu-title-input" />
+        </div>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-fg)', display: 'block', marginBottom: 6 }}>CONTENT *</label>
+          <textarea className="fi" rows={5} value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} data-testid="edu-content-input" />
+        </div>
+        <div>
+          <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-fg)', display: 'block', marginBottom: 6 }}>SOURCE</label>
+          <input className="fi" value={form.source} onChange={e => setForm(f => ({ ...f, source: e.target.value }))} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => setForm(f => ({ ...f, active: !f.active }))}>
+          <div style={{ width: 20, height: 20, borderRadius: 6, border: '2px solid var(--border)', background: form.active ? 'var(--primary)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {form.active && <span style={{ color: '#fff', fontSize: 12 }}>✓</span>}
+          </div>
+          <span style={{ fontSize: 14, fontWeight: 600 }}>Active</span>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn-p" onClick={submit} data-testid="save-edu-btn">{form.id ? 'Save' : 'Create'}</button>
+          <button className="btn-o" onClick={() => setForm(null)}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div>
+          <h3 className="fh" style={{ fontSize: 20, fontWeight: 700 }}>Education Tips</h3>
+          <p style={{ fontSize: 13, color: 'var(--muted-fg)', marginTop: 2 }}>{tips.length} tip{tips.length !== 1 ? 's' : ''}</p>
+        </div>
+        <button className="btn-p" onClick={() => setForm({ ...defaultTip })} data-testid="new-edu-btn">+ New Tip</button>
+      </div>
+      {loading ? (
+        <p style={{ color: 'var(--muted-fg)', padding: 20 }}>Loading…</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {tips.map(t => (
+            <div key={t.id} className="content-item" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, background: t.category === 'habit' ? 'rgba(77,182,172,.12)' : 'rgba(139,92,246,.15)', color: t.category === 'habit' ? 'var(--primary)' : '#8b5cf6', padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase' }}>{t.category}</span>
+                  <p style={{ fontWeight: 700, fontSize: 14 }}>{t.title}</p>
+                  {!t.active && <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(239,68,68,.12)', color: '#ef4444', padding: '2px 8px', borderRadius: 20 }}>inactive</span>}
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--muted-fg)', marginTop: 3, lineHeight: 1.5 }}>{t.content.slice(0, 140)}{t.content.length > 140 ? '…' : ''}</p>
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button onClick={() => toggleActive(t)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', color: 'var(--muted-fg)' }}>{t.active ? 'Hide' : 'Show'}</button>
+                <button onClick={() => setForm(t)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', color: 'var(--fg)' }} data-testid={`edit-edu-${t.id}`}>Edit</button>
+                <button onClick={() => del(t.id)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(239,68,68,.3)', background: 'transparent', cursor: 'pointer', color: '#ef4444' }} data-testid={`delete-edu-${t.id}`}>Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SettingsTab({ onLogout }) {
   const [pass, setPass] = useState('');
   const [newPass, setNewPass] = useState('');
@@ -321,13 +620,15 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, background: 'var(--muted)', borderRadius: 14, padding: 4, marginBottom: 28, width: 'fit-content' }}>
-          {[{ id: 'articles', label: '📝 Articles' }, { id: 'games', label: '🎮 Games' }, { id: 'settings', label: '⚙️ Settings' }].map(t => (
+          {[{ id: 'articles', label: '📝 Articles' }, { id: 'feed', label: '📱 Feed' }, { id: 'education', label: '📚 Education' }, { id: 'games', label: '🎮 Games' }, { id: 'settings', label: '⚙️ Settings' }].map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} className={`tab-btn${activeTab === t.id ? ' active' : ''}`} data-testid={`admin-tab-${t.id}`}>{t.label}</button>
           ))}
         </div>
 
         <div className="card" style={{ padding: '24px 28px' }}>
           {activeTab === 'articles' && <ArticlesTab />}
+          {activeTab === 'feed' && <FeedTab />}
+          {activeTab === 'education' && <EducationTab />}
           {activeTab === 'games' && <GamesTab />}
           {activeTab === 'settings' && <SettingsTab onLogout={logout} />}
         </div>
