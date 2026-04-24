@@ -6,7 +6,7 @@
 
 import { db } from '../firebase';
 import {
-  collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, orderBy, where,
+  collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, orderBy, where, increment,
 } from 'firebase/firestore';
 
 const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
@@ -128,8 +128,71 @@ export const deleteEducationTip = async (id) => {
   await deleteDoc(doc(db, EDU, id));
 };
 
-// ─── AI Daily Generation ───────────────────────────────────────────────────
-const FEED_PROMPT = `You are writing short, uplifting micro-content for a habit-tracking app called "Awesome Life". Generate exactly 7 NEW and UNIQUE feed slides for today. Each slide must be one of these types: conspiracy (whimsical reframe of setbacks), reframe (positive perspective flip), affirmation (mindful encouragement), quickwin (community-style win mention), cosmic (cosmic/universe themed motivation).
+// ─── Engagement tracking ───────────────────────────────────────────────────
+// Atomic increment — safe across users/tabs
+export const incrementPostEngagement = async (postId, field) => {
+  const validFields = ['likes', 'saves', 'shares'];
+  if (!validFields.includes(field)) throw new Error(`Invalid engagement field: ${field}`);
+  try {
+    await updateDoc(doc(db, FEED, postId), { [field]: increment(1) });
+  } catch (e) {
+    // Doc may not have the field yet — set via merge
+    await setDoc(doc(db, FEED, postId), { [field]: 1 }, { merge: true });
+  }
+};
+
+// Engagement score: likes*2 + saves*3 + shares*1 (saves signal highest intent)
+const scoreOf = (p) => (p.likes || 0) * 2 + (p.saves || 0) * 3 + (p.shares || 0) * 1;
+
+// Top performing post in the last N days (by engagement score)
+export const fetchTopPost = async ({ days = 7 } = {}) => {
+  const snap = await getDocs(collection(db, FEED));
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const recent = snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(p => p.active !== false && p.createdAt && new Date(p.createdAt) >= cutoff);
+  if (!recent.length) return null;
+  recent.sort((a, b) => scoreOf(b) - scoreOf(a));
+  const top = recent[0];
+  return scoreOf(top) > 0 ? { ...top, score: scoreOf(top) } : null;
+};
+
+// Average engagement score by type over last N days
+export const fetchEngagementByType = async ({ days = 7 } = {}) => {
+  const snap = await getDocs(collection(db, FEED));
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const recent = snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(p => p.active !== false && p.createdAt && new Date(p.createdAt) >= cutoff);
+  const byType = {};
+  for (const t of VALID_TYPES) byType[t] = { total: 0, count: 0, avg: 0 };
+  for (const p of recent) {
+    if (!byType[p.type]) continue;
+    byType[p.type].total += scoreOf(p);
+    byType[p.type].count += 1;
+  }
+  for (const t of VALID_TYPES) {
+    byType[t].avg = byType[t].count ? byType[t].total / byType[t].count : 0;
+  }
+  return byType;
+};
+
+// Returns top-2 types ranked by avg engagement (for prompt bias)
+export const fetchWinningTypes = async ({ days = 7 } = {}) => {
+  const byType = await fetchEngagementByType({ days });
+  return Object.entries(byType)
+    .filter(([, v]) => v.count > 0 && v.avg > 0)
+    .sort(([, a], [, b]) => b.avg - a.avg)
+    .slice(0, 2)
+    .map(([t]) => t);
+};
+const buildFeedPrompt = (winningTypes = []) => {
+  const hint = winningTypes.length
+    ? `\nENGAGEMENT SIGNAL: Over the past week, users are engaging most with these types: ${winningTypes.join(', ')}. Include at least 2-3 slides of these winning types in your 7, while still keeping variety across all 5 types.`
+    : '';
+  return `You are writing short, uplifting micro-content for a habit-tracking app called "Awesome Life". Generate exactly 7 NEW and UNIQUE feed slides for today. Each slide must be one of these types: conspiracy (whimsical reframe of setbacks), reframe (positive perspective flip), affirmation (mindful encouragement), quickwin (community-style win mention), cosmic (cosmic/universe themed motivation).
 
 Return ONLY a valid JSON array (no markdown, no prose) with exactly 7 objects, each with these fields:
 - "type": one of "conspiracy" | "reframe" | "affirmation" | "quickwin" | "cosmic"
@@ -138,7 +201,8 @@ Return ONLY a valid JSON array (no markdown, no prose) with exactly 7 objects, e
 - "text": the main message, 1-2 sentences, warm and poetic, can include one emoji max
 - "subtext": short tag line, 2-5 words
 
-Keep voice: gentle, witty, affirming. Mix the 5 types across the 7 slides. DO NOT repeat any of the already-seeded evergreen phrases.`;
+Keep voice: gentle, witty, affirming. Mix the 5 types across the 7 slides. DO NOT repeat any of the already-seeded evergreen phrases.${hint}`;
+};
 
 const GRADIENTS_BY_TYPE = {
   conspiracy: 'from-primary/20 via-transparent to-transparent',
@@ -180,8 +244,12 @@ export const generateDailyFeed = async ({ source = 'auto', force = false } = {})
   // Mark in-progress to prevent races from multiple tabs
   await setDoc(logRef, { date: today, status: 'in_progress', startedAt: new Date().toISOString(), source }, { merge: true });
 
+  // Fetch engagement-winning types from the past week to bias prompt
+  let winningTypes = [];
+  try { winningTypes = await fetchWinningTypes({ days: 7 }); } catch { /* ignore */ }
+
   const res = await xhrPost(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-    contents: [{ parts: [{ text: FEED_PROMPT }] }],
+    contents: [{ parts: [{ text: buildFeedPrompt(winningTypes) }] }],
     generationConfig: { temperature: 0.9, topK: 40, topP: 0.95, maxOutputTokens: 2048, responseMimeType: 'application/json' },
   });
 
@@ -214,7 +282,7 @@ export const generateDailyFeed = async ({ source = 'auto', force = false } = {})
     written += 1;
   }
 
-  await setDoc(logRef, { date: today, status: 'done', count: written, generatedAt: new Date().toISOString(), source }, { merge: true });
+  await setDoc(logRef, { date: today, status: 'done', count: written, generatedAt: new Date().toISOString(), source, winningTypes }, { merge: true });
   return { skipped: false, count: written };
 };
 

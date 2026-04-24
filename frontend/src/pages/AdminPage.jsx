@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   fetchFeedPosts, createFeedPost, updateFeedPost, deleteFeedPost,
   fetchEducationTips, createEducationTip, updateEducationTip, deleteEducationTip,
-  generateDailyFeed, seedContentIfEmpty, fetchGenerationLogs,
+  generateDailyFeed, seedContentIfEmpty, fetchGenerationLogs, fetchTopPost, fetchEngagementByType,
 } from '../services/contentService';
 import './shared-pages.css';
 
@@ -240,6 +240,8 @@ function FeedTab() {
   const [search, setSearch] = useState('');
   const [logs, setLogs] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [topPost, setTopPost] = useState(null);
+  const [engagementByType, setEngagementByType] = useState(null);
 
   const FEED_TYPES = ['conspiracy', 'reframe', 'affirmation', 'quickwin', 'cosmic'];
   const FEED_VISUALS = ['lotus', 'daisy', 'circle', 'stats', 'cosmic'];
@@ -259,12 +261,16 @@ function FeedTab() {
   const load = async () => {
     setLoading(true);
     await seedContentIfEmpty();
-    const [list, logList] = await Promise.all([
+    const [list, logList, top, byType] = await Promise.all([
       fetchFeedPosts({ activeOnly: false }),
       fetchGenerationLogs({ days: 30 }),
+      fetchTopPost({ days: 7 }),
+      fetchEngagementByType({ days: 7 }),
     ]);
     setPosts(list);
     setLogs(logList);
+    setTopPost(top);
+    setEngagementByType(byType);
     setLoading(false);
   };
 
@@ -376,6 +382,46 @@ function FeedTab() {
         </div>
       </div>
 
+      {(topPost || (engagementByType && Object.values(engagementByType).some(v => v.count > 0))) && (
+        <div className="card" style={{ padding: '18px 20px', marginBottom: 16, background: 'linear-gradient(135deg, rgba(77,182,172,.08), rgba(139,92,246,.08))', border: '1px solid rgba(77,182,172,.2)' }} data-testid="engagement-insights-panel">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <span style={{ fontSize: 18 }}>🏆</span>
+            <p style={{ fontSize: 14, fontWeight: 700 }}>Engagement Insights (last 7 days)</p>
+          </div>
+          {topPost ? (
+            <div style={{ marginBottom: 14 }} data-testid="top-post-card">
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, color: 'var(--muted-fg)', marginBottom: 6 }}>Top Performing Post</p>
+              <p style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.5, marginBottom: 8 }}>"{(topPost.text || '').slice(0, 160)}{(topPost.text || '').length > 160 ? '…' : ''}"</p>
+              <div style={{ display: 'flex', gap: 14, fontSize: 12, color: 'var(--muted-fg)', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'var(--primary-l)', color: 'var(--primary)', textTransform: 'uppercase' }}>{topPost.type}</span>
+                <span>♥ {topPost.likes || 0}</span>
+                <span>💾 {topPost.saves || 0}</span>
+                <span>↗ {topPost.shares || 0}</span>
+                <span style={{ fontWeight: 700, color: 'var(--fg)' }}>Score: {topPost.score}</span>
+              </div>
+            </div>
+          ) : (
+            <p style={{ fontSize: 13, color: 'var(--muted-fg)', marginBottom: 14, fontStyle: 'italic' }}>
+              No engagement signal yet. Users need to heart/save/share posts for insights to appear.
+            </p>
+          )}
+          {engagementByType && (
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, color: 'var(--muted-fg)', marginBottom: 8 }}>Avg Score by Type (seeds next AI batch)</p>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }} data-testid="engagement-by-type">
+                {Object.entries(engagementByType).sort(([, a], [, b]) => b.avg - a.avg).map(([type, data]) => (
+                  <div key={type} style={{ padding: '6px 12px', background: 'var(--bg)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8, border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted-fg)' }}>{type}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: data.avg > 0 ? 'var(--primary)' : 'var(--muted-fg)' }}>{data.avg.toFixed(1)}</span>
+                    <span style={{ fontSize: 10, color: 'var(--muted-fg)' }}>({data.count})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {showHistory && (
         <div className="card" style={{ padding: '18px 20px', marginBottom: 20, background: 'var(--muted)' }} data-testid="generation-history-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
@@ -411,6 +457,9 @@ function FeedTab() {
                     <span style={{ color: 'var(--muted-fg)', minWidth: 90 }}>{l.count != null ? `${l.count} posts` : '—'}</span>
                     <span style={{ color: 'var(--muted-fg)', minWidth: 70 }}>{timeStr}</span>
                     <span style={{ color: 'var(--muted-fg)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>{l.source || '—'}</span>
+                    {l.winningTypes && l.winningTypes.length > 0 && (
+                      <span style={{ fontSize: 10, color: 'var(--primary)', fontStyle: 'italic' }} title="AI was biased toward these types based on past engagement">→ {l.winningTypes.join(', ')}</span>
+                    )}
                     {l.error && <span style={{ color: '#ef4444', fontSize: 11, flex: 1, textAlign: 'right', fontStyle: 'italic' }} title={l.error}>{l.error.slice(0, 60)}{l.error.length > 60 ? '…' : ''}</span>}
                   </div>
                 );
@@ -435,6 +484,13 @@ function FeedTab() {
                   <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--primary-l)', color: 'var(--primary)', padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase' }}>{p.type}</span>
                   <span style={{ fontSize: 10, fontWeight: 700, background: p.source === 'ai' || p.source === 'ai-admin' ? 'rgba(139,92,246,0.15)' : p.source === 'evergreen' ? 'rgba(77,182,172,.12)' : 'var(--muted)', color: p.source === 'ai' || p.source === 'ai-admin' ? '#8b5cf6' : p.source === 'evergreen' ? 'var(--primary)' : 'var(--muted-fg)', padding: '2px 8px', borderRadius: 20 }}>{p.source}</span>
                   {!p.active && <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(239,68,68,.12)', color: '#ef4444', padding: '2px 8px', borderRadius: 20 }}>inactive</span>}
+                  {(p.likes || p.saves || p.shares) ? (
+                    <span style={{ fontSize: 10, color: 'var(--muted-fg)', display: 'flex', gap: 8 }} data-testid={`engagement-${p.id}`}>
+                      <span>♥ {p.likes || 0}</span>
+                      <span>💾 {p.saves || 0}</span>
+                      <span>↗ {p.shares || 0}</span>
+                    </span>
+                  ) : null}
                 </div>
                 <p style={{ fontSize: 13, lineHeight: 1.5 }}>{p.text}</p>
                 {p.subtext && <p style={{ fontSize: 11, color: 'var(--muted-fg)', marginTop: 2 }}>{p.subtext}</p>}

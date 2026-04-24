@@ -4,7 +4,13 @@ import { Button } from '../components/ui/button';
 import { useApp } from '../context/AppContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { fetchFeedPosts, generateDailyFeed, hasGeneratedToday, seedContentIfEmpty } from '../services/contentService';
+import { fetchFeedPosts, generateDailyFeed, hasGeneratedToday, seedContentIfEmpty, incrementPostEngagement } from '../services/contentService';
+
+// LocalStorage keys to remember per-user actions (prevents double-counting)
+const LIKED_KEY = 'alu_feed_liked';
+const SAVED_KEY = 'alu_feed_saved';
+const loadSet = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); } catch { return new Set(); } };
+const saveSet = (k, s) => { try { localStorage.setItem(k, JSON.stringify([...s])); } catch { /* quota */ } };
 
 // Mini Daisy Animation Component for feed
 const MiniDaisyBloom = ({ animate }) => (
@@ -98,8 +104,8 @@ const AwesomeFeedPage = () => {
   const { habits, stats } = useApp();
   const [feedItems, setFeedItems] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [savedItems, setSavedItems] = useState([]);
-  const [likedItems, setLikedItems] = useState([]);
+  const [savedItems, setSavedItems] = useState(() => loadSet(SAVED_KEY));
+  const [likedItems, setLikedItems] = useState(() => loadSet(LIKED_KEY));
   const [isAnimating, setIsAnimating] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
   const [loadingFeed, setLoadingFeed] = useState(true);
@@ -190,24 +196,36 @@ const AwesomeFeedPage = () => {
   };
 
   const handleSave = (itemId) => {
-    if (savedItems.includes(itemId)) {
-      setSavedItems(prev => prev.filter(id => id !== itemId));
-      toast.info('Removed from journal');
-    } else {
-      setSavedItems(prev => [...prev, itemId]);
-      toast.success('Saved to journal! 📝');
-    }
+    setSavedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+        toast.info('Removed from journal');
+      } else {
+        next.add(itemId);
+        toast.success('Saved to journal! 📝');
+        incrementPostEngagement(itemId, 'saves').catch(() => {});
+      }
+      saveSet(SAVED_KEY, next);
+      return next;
+    });
   };
 
   const handleLike = (itemId) => {
-    if (!likedItems.includes(itemId)) {
-      setLikedItems(prev => [...prev, itemId]);
+    setLikedItems(prev => {
+      if (prev.has(itemId)) return prev;
+      const next = new Set(prev);
+      next.add(itemId);
+      saveSet(LIKED_KEY, next);
       toast.success('Loved it! 💚');
-    }
+      incrementPostEngagement(itemId, 'likes').catch(() => {});
+      return next;
+    });
   };
 
-  const handleShare = () => {
+  const handleShare = (itemId) => {
     toast.success('Shared anonymously to community! 🌟');
+    if (itemId) incrementPostEngagement(itemId, 'shares').catch(() => {});
   };
 
   const handleBloomSession = () => {
@@ -347,24 +365,24 @@ const AwesomeFeedPage = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => handleLike(currentItem.id)}
-                  className={`rounded-full ${likedItems.includes(currentItem.id) ? 'text-red-500' : 'text-white/80'}`}
+                  className={`rounded-full ${likedItems.has(currentItem.id) ? 'text-red-500' : 'text-white/80'}`}
                   data-testid="feed-like-button"
                 >
-                  <Heart className={`w-5 h-5 ${likedItems.includes(currentItem.id) ? 'fill-current' : ''}`} />
+                  <Heart className={`w-5 h-5 ${likedItems.has(currentItem.id) ? 'fill-current' : ''}`} />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => handleSave(currentItem.id)}
-                  className={`rounded-full ${savedItems.includes(currentItem.id) ? 'text-primary' : 'text-white/80'}`}
+                  className={`rounded-full ${savedItems.has(currentItem.id) ? 'text-primary' : 'text-white/80'}`}
                   data-testid="feed-save-button"
                 >
-                  <Bookmark className={`w-5 h-5 ${savedItems.includes(currentItem.id) ? 'fill-current' : ''}`} />
+                  <Bookmark className={`w-5 h-5 ${savedItems.has(currentItem.id) ? 'fill-current' : ''}`} />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={handleShare}
+                  onClick={() => handleShare(currentItem.id)}
                   className="rounded-full text-white/80"
                   data-testid="feed-share-button"
                 >
