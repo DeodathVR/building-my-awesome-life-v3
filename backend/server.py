@@ -390,35 +390,51 @@ class AICoachRequest(BaseModel):
 
 @api_router.post("/ai-coach")
 async def ai_coach_chat(request: AICoachRequest):
-    api_key = os.environ.get('EMERGENT_LLM_KEY')
-    if not api_key:
+    gemini_key = os.environ.get('GEMINI_API_KEY')
+    emergent_key = os.environ.get('EMERGENT_LLM_KEY')
+
+    if not gemini_key and not emergent_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
+
+    habits_text = ', '.join(request.habits) if request.habits else 'none tracked yet'
+    system_prompt = (
+        "You are a supportive and knowledgeable AI habit coach. Your role is to: "
+        "help users build and maintain positive habits, provide encouragement and motivation, "
+        "offer practical tips for habit formation based on behavioral science, "
+        "be empathetic and understanding of struggles, celebrate wins no matter how small, "
+        "and keep responses concise but helpful (2-3 paragraphs max). "
+        f"Current user habits: {habits_text}"
+    )
+    session_id = request.session_id or str(uuid.uuid4())
+
+    # Prefer user's own Gemini key (free/cheap) over Emergent LLM key
+    if gemini_key:
+        try:
+            import httpx
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}"
+            payload = {
+                "contents": [{"parts": [{"text": f"{system_prompt}\n\nUser: {request.message}"}]}],
+                "generationConfig": {"temperature": 0.7, "topK": 40, "topP": 0.95, "maxOutputTokens": 1024}
+            }
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.post(url, json=payload)
+            data = resp.json()
+            if resp.status_code == 200 and not data.get("error"):
+                text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                return {"response": text, "session_id": session_id}
+            logging.warning(f"Gemini key failed ({resp.status_code}), trying fallback")
+        except Exception as e:
+            logging.warning(f"Gemini direct call failed: {e}, trying fallback")
+
+    # Fallback: Emergent LLM Key
     try:
-        session_id = request.session_id or str(uuid.uuid4())
-        habits_text = ', '.join(request.habits) if request.habits else 'none tracked yet'
-        system_message = (
-            "You are a supportive and knowledgeable AI habit coach. Your role is to: "
-            "help users build and maintain positive habits, provide encouragement and motivation, "
-            "offer practical tips for habit formation based on behavioral science, "
-            "be empathetic and understanding of struggles, celebrate wins no matter how small, "
-            "and keep responses concise but helpful (2-3 paragraphs max). "
-            f"Current user habits: {habits_text}"
-        )
         chat = LlmChat(
-            api_key=api_key,
+            api_key=emergent_key,
             session_id=session_id,
-            system_message=system_message
+            system_message=system_prompt
         ).with_model("gemini", "gemini-2.0-flash")
-
-        msg = UserMessage(text=request.message)
-        response = await chat.send_message(msg)
-
-        return {
-            "response": response,
-            "session_id": session_id
-        }
-    except HTTPException:
-        raise
+        response = await chat.send_message(UserMessage(text=request.message))
+        return {"response": response, "session_id": session_id}
     except Exception as e:
         logging.error(f"AI Coach error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"AI Coach failed: {str(e)}")
