@@ -7,7 +7,6 @@ import {
 } from '../services/contentService';
 import './shared-pages.css';
 
-const ADMIN_PASS = 'awesome2026';
 const ARTICLES_KEY = 'alu_admin_articles';
 const GAMES_KEY = 'alu_admin_games';
 
@@ -634,16 +633,8 @@ function EducationTab() {
   );
 }
 
-function SettingsTab({ onLogout }) {
-  const [pass, setPass] = useState('');
-  const [newPass, setNewPass] = useState('');
+function SettingsTab() {
   const [msg, setMsg] = useState('');
-
-  const changePass = () => {
-    if (pass !== ADMIN_PASS) { setMsg('Current password incorrect'); return; }
-    if (newPass.length < 6) { setMsg('New password must be at least 6 characters'); return; }
-    setMsg('Password change is session-only (not persisted). Use the source to update permanently.');
-  };
 
   const clearAll = (key, label) => {
     if (window.confirm(`Delete all ${label}? This cannot be undone.`)) {
@@ -656,62 +647,25 @@ function SettingsTab({ onLogout }) {
     <div style={{ maxWidth: 480 }}>
       <h3 className="fh" style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>Settings</h3>
       <div className="card" style={{ padding: '20px 22px', marginBottom: 16 }}>
-        <h4 style={{ fontWeight: 700, marginBottom: 14 }}>Change Password</h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <input className="fi" type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Current password" />
-          <input className="fi" type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="New password" />
-          <button className="btn-p" onClick={changePass}>Update Password</button>
-          {msg && <p style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600 }}>{msg}</p>}
-        </div>
+        <h4 style={{ fontWeight: 700, marginBottom: 6 }}>Account</h4>
+        <p style={{ fontSize: 13, color: 'var(--muted-fg)', lineHeight: 1.6 }}>
+          Account & password management is handled via Firebase Auth. Use the user menu in the top-right to sign out. Password resets are emailed from the sign-in page.
+        </p>
       </div>
       <div className="card" style={{ padding: '20px 22px', marginBottom: 16 }}>
         <h4 style={{ fontWeight: 700, marginBottom: 14 }}>Danger Zone</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button onClick={() => clearAll(ARTICLES_KEY, 'articles')} style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid rgba(239,68,68,.3)', background: 'transparent', cursor: 'pointer', color: '#ef4444', fontSize: 13, fontWeight: 700, fontFamily: 'Manrope,sans-serif', textAlign: 'left' }}>Delete All Articles</button>
-          <button onClick={() => clearAll(GAMES_KEY, 'games')} style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid rgba(239,68,68,.3)', background: 'transparent', cursor: 'pointer', color: '#ef4444', fontSize: 13, fontWeight: 700, fontFamily: 'Manrope,sans-serif', textAlign: 'left' }}>Delete All Custom Games</button>
+          <button onClick={() => clearAll(ARTICLES_KEY, 'articles')} style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid rgba(239,68,68,.3)', background: 'transparent', cursor: 'pointer', color: '#ef4444', fontSize: 13, fontWeight: 700, fontFamily: 'Manrope,sans-serif', textAlign: 'left' }}>Delete All Articles (local)</button>
+          <button onClick={() => clearAll(GAMES_KEY, 'games')} style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid rgba(239,68,68,.3)', background: 'transparent', cursor: 'pointer', color: '#ef4444', fontSize: 13, fontWeight: 700, fontFamily: 'Manrope,sans-serif', textAlign: 'left' }}>Delete All Custom Games (local)</button>
+          {msg && <p style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600 }}>{msg}</p>}
         </div>
       </div>
-      <button className="btn-o" onClick={onLogout}>Log Out of Admin</button>
     </div>
   );
 }
 
 export default function AdminPage() {
-  const [auth, setAuth] = useState(() => sessionStorage.getItem('alu_admin') === '1');
-  const [passInput, setPassInput] = useState('');
-  const [passError, setPassError] = useState('');
   const [activeTab, setActiveTab] = useState('articles');
-
-  const login = () => {
-    if (passInput === ADMIN_PASS) { sessionStorage.setItem('alu_admin', '1'); setAuth(true); }
-    else { setPassError('Incorrect password'); setPassInput(''); }
-  };
-
-  const logout = () => { sessionStorage.removeItem('alu_admin'); setAuth(false); };
-
-  if (!auth) return (
-    <div className="alu-s" data-testid="admin-login-page">
-      <div className="orb" style={{ left: '50%', top: '20%', width: 400, height: 400, background: 'rgba(77,182,172,0.07)', filter: 'blur(120px)', animationDuration: '13s', transform: 'translateX(-50%)' }} />
-      <div style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative', zIndex: 1 }}>
-        <div className="card au" style={{ padding: '40px 36px', maxWidth: 380, width: '100%', textAlign: 'center' }}>
-          <div style={{ width: 56, height: 56, borderRadius: 18, background: 'var(--primary-l)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: 26 }}>🔐</div>
-          <h1 className="fh" style={{ fontSize: 26, fontWeight: 700, marginBottom: 6 }}>Admin Panel</h1>
-          <p style={{ fontSize: 13, color: 'var(--muted-fg)', marginBottom: 24, lineHeight: 1.6 }}>Enter your admin password to continue</p>
-          <input
-            className="fi" type="password" value={passInput}
-            onChange={e => setPassInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && login()}
-            placeholder="Enter password..."
-            style={{ marginBottom: 10 }}
-            data-testid="admin-password-input"
-            autoFocus
-          />
-          {passError && <p style={{ fontSize: 12, color: '#ef4444', fontWeight: 600, marginBottom: 10 }}>{passError}</p>}
-          <button className="btn-p" style={{ width: '100%' }} onClick={login} data-testid="admin-login-btn">Access Admin</button>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="alu-s" data-testid="admin-page">
@@ -719,16 +673,13 @@ export default function AdminPage() {
       <div className="grid-dot-bg" />
 
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 24px 80px', position: 'relative', zIndex: 1 }}>
-        <section style={{ paddingTop: 48, paddingBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <p style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 4, color: 'var(--primary)', marginBottom: 6 }}>Admin Panel</p>
-            <h1 className="fh" style={{ fontSize: 36, fontWeight: 700, lineHeight: 1.05 }}>Content <span className="glow-text">Manager</span></h1>
-          </div>
-          <button className="btn-o" onClick={logout} style={{ padding: '9px 18px', fontSize: 13 }}>Log Out</button>
+        <section style={{ paddingTop: 48, paddingBottom: 32 }}>
+          <p style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 4, color: 'var(--primary)', marginBottom: 6 }}>Admin Panel</p>
+          <h1 className="fh" style={{ fontSize: 36, fontWeight: 700, lineHeight: 1.05 }}>Content <span className="glow-text">Manager</span></h1>
         </section>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, background: 'var(--muted)', borderRadius: 14, padding: 4, marginBottom: 28, width: 'fit-content' }}>
+        <div style={{ display: 'flex', gap: 4, background: 'var(--muted)', borderRadius: 14, padding: 4, marginBottom: 28, width: 'fit-content', flexWrap: 'wrap' }}>
           {[{ id: 'articles', label: '📝 Articles' }, { id: 'feed', label: '📱 Feed' }, { id: 'education', label: '📚 Education' }, { id: 'games', label: '🎮 Games' }, { id: 'settings', label: '⚙️ Settings' }].map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} className={`tab-btn${activeTab === t.id ? ' active' : ''}`} data-testid={`admin-tab-${t.id}`}>{t.label}</button>
           ))}
@@ -739,7 +690,7 @@ export default function AdminPage() {
           {activeTab === 'feed' && <FeedTab />}
           {activeTab === 'education' && <EducationTab />}
           {activeTab === 'games' && <GamesTab />}
-          {activeTab === 'settings' && <SettingsTab onLogout={logout} />}
+          {activeTab === 'settings' && <SettingsTab />}
         </div>
       </div>
     </div>

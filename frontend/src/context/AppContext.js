@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
+import { useAuth } from './AuthContext';
 import { 
   collection, 
   doc, 
@@ -10,6 +11,7 @@ import {
   deleteDoc, 
   query, 
   orderBy,
+  where,
   setDoc,
   Timestamp 
 } from 'firebase/firestore';
@@ -137,6 +139,7 @@ const SEED_CHALLENGES = [
 ];
 
 export const AppProvider = ({ children }) => {
+  const { user, isAdmin } = useAuth();
   const [habits, setHabits] = useState([]);
   const [stats, setStats] = useState(null);
   const [communityPosts, setCommunityPosts] = useState([]);
@@ -193,11 +196,13 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
-  // Fetch habits from Firestore
+  // Fetch habits from Firestore (scoped to current user)
   const fetchHabits = useCallback(async () => {
+    if (!user) { setHabits([]); setStats(null); return []; }
     try {
       const habitsRef = collection(db, HABITS_COLLECTION);
-      const snapshot = await getDocs(habitsRef);
+      const q = query(habitsRef, where('userId', '==', user.uid));
+      const snapshot = await getDocs(q);
       const habitsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -209,7 +214,7 @@ export const AppProvider = ({ children }) => {
       console.error('Error fetching habits:', err);
       return [];
     }
-  }, [calculateStats]);
+  }, [user, calculateStats]);
 
   // Fetch stats (calculated from habits)
   const fetchStats = useCallback(async () => {
@@ -254,79 +259,97 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
-  // Seed initial data if collections are empty
+  // Seed initial data if this user has no habits (and do legacy cleanup for admin)
   const seedData = useCallback(async () => {
+    if (!user) return;
     try {
-      // Check if habits exist
+      // ADMIN ONLY: auto-clean legacy habits that have no userId (pre-auth shared data)
+      if (isAdmin) {
+        const alreadyCleaned = localStorage.getItem('alu_legacy_cleaned_v1');
+        if (!alreadyCleaned) {
+          const habitsRef = collection(db, HABITS_COLLECTION);
+          const all = await getDocs(habitsRef);
+          const legacy = all.docs.filter(d => !d.data().userId);
+          for (const d of legacy) {
+            await deleteDoc(doc(db, HABITS_COLLECTION, d.id));
+          }
+          localStorage.setItem('alu_legacy_cleaned_v1', '1');
+          if (legacy.length > 0) console.log(`Cleaned ${legacy.length} legacy habits`);
+        }
+      }
+
+      // Per-user seed: only if THIS user has no habits yet
       const habitsRef = collection(db, HABITS_COLLECTION);
-      const habitsSnapshot = await getDocs(habitsRef);
-      
-      if (habitsSnapshot.empty) {
-        console.log('Seeding habits...');
+      const mySnap = await getDocs(query(habitsRef, where('userId', '==', user.uid)));
+
+      if (mySnap.empty) {
         for (const habit of SEED_HABITS) {
           const id = generateId();
           await setDoc(doc(db, HABITS_COLLECTION, id), {
             ...habit,
-            id
+            id,
+            userId: user.uid,
           });
         }
       }
 
-      // Check if posts exist
+      // Community posts + challenges are GLOBAL — only seed if the whole collection is empty
       const postsRef = collection(db, POSTS_COLLECTION);
       const postsSnapshot = await getDocs(postsRef);
-      
       if (postsSnapshot.empty) {
-        console.log('Seeding posts...');
         for (const post of SEED_POSTS) {
           const id = generateId();
-          await setDoc(doc(db, POSTS_COLLECTION, id), {
-            ...post,
-            id
-          });
+          await setDoc(doc(db, POSTS_COLLECTION, id), { ...post, id });
         }
       }
 
-      // Check if challenges exist
       const challengesRef = collection(db, CHALLENGES_COLLECTION);
       const challengesSnapshot = await getDocs(challengesRef);
-      
       if (challengesSnapshot.empty) {
-        console.log('Seeding challenges...');
         for (const challenge of SEED_CHALLENGES) {
           const id = generateId();
-          await setDoc(doc(db, CHALLENGES_COLLECTION, id), {
-            ...challenge,
-            id
-          });
+          await setDoc(doc(db, CHALLENGES_COLLECTION, id), { ...challenge, id });
         }
       }
     } catch (err) {
       console.error('Error seeding data:', err);
     }
-  }, []);
+  }, [user, isAdmin]);
 
-  // Initial load
+  // Load data whenever user changes (login/logout)
   useEffect(() => {
+    if (!user) {
+      setHabits([]);
+      setStats(null);
+      setCommunityPosts([]);
+      setChallenges([]);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
     const init = async () => {
       setLoading(true);
       await seedData();
+      if (cancelled) return;
       await Promise.all([
         fetchHabits(),
         fetchCommunityPosts(),
         fetchChallenges()
       ]);
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     };
     init();
-  }, [seedData, fetchHabits, fetchCommunityPosts, fetchChallenges]);
+    return () => { cancelled = true; };
+  }, [user, seedData, fetchHabits, fetchCommunityPosts, fetchChallenges]);
 
   // Create habit
   const createHabit = async (habitData) => {
+    if (!user) throw new Error('Not authenticated');
     try {
       const id = generateId();
       const newHabit = {
         id,
+        userId: user.uid,
         name: habitData.name,
         description: habitData.description || '',
         frequency: habitData.frequency || 'daily',

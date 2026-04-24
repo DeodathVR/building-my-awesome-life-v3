@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Target, Focus, BookOpen, Users, MessageCircle, Moon, Sun, Menu, X, Sparkles, Wand2, Gamepad2, Zap, HelpCircle, CreditCard, ShieldCheck } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Target, Focus, BookOpen, Users, MessageCircle, Moon, Sun, Menu, X, Sparkles, Wand2, Gamepad2, Zap, HelpCircle, CreditCard, ShieldCheck, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
+import { toast } from 'sonner';
 
-const navItems = [
+const baseNavItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
   { path: '/habits', icon: Target, label: 'Habits' },
   { path: '/focus', icon: Focus, label: 'Focus' },
@@ -17,13 +19,31 @@ const navItems = [
   { path: '/coach', icon: MessageCircle, label: 'AI Coach' },
   { path: '/pricing', icon: CreditCard, label: 'Pricing' },
   { path: '/how-to-use', icon: HelpCircle, label: 'Guide' },
-  { path: '/admin', icon: ShieldCheck, label: 'Admin' },
 ];
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { darkMode, setDarkMode } = useApp();
+  const { user, isAdmin, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const navItems = isAdmin
+    ? [...baseNavItems, { path: '/admin', icon: ShieldCheck, label: 'Admin' }]
+    : baseNavItems;
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Signed out');
+      navigate('/auth');
+    } catch {
+      toast.error('Sign out failed');
+    }
+  };
+
+  const userInitial = (user?.displayName || user?.email || '?').charAt(0).toUpperCase();
 
   return (
     <>
@@ -63,21 +83,56 @@ const Navigation = () => {
               ))}
             </div>
 
-            {/* Dark Mode Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setDarkMode(!darkMode)}
-              data-testid="dark-mode-toggle"
-              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="rounded-xl flex-shrink-0"
-            >
-              {darkMode ? (
-                <Sun className="w-4 h-4" strokeWidth={1.5} />
-              ) : (
-                <Moon className="w-4 h-4" strokeWidth={1.5} />
+            {/* Right side: Dark mode + User menu */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDarkMode(!darkMode)}
+                data-testid="dark-mode-toggle"
+                aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                className="rounded-xl"
+              >
+                {darkMode ? (
+                  <Sun className="w-4 h-4" strokeWidth={1.5} />
+                ) : (
+                  <Moon className="w-4 h-4" strokeWidth={1.5} />
+                )}
+              </Button>
+              {user && (
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(o => !o)}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-muted transition-colors"
+                    data-testid="user-menu-btn"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                      {userInitial}
+                    </div>
+                  </button>
+                  {userMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setUserMenuOpen(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-lg z-40 py-2" data-testid="user-menu-dropdown">
+                        <div className="px-3 py-2 border-b border-border/50">
+                          <p className="text-xs font-semibold truncate">{user.displayName || 'User'}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                          {isAdmin && <span className="inline-block mt-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">ADMIN</span>}
+                        </div>
+                        <button
+                          onClick={() => { setUserMenuOpen(false); handleSignOut(); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-left"
+                          data-testid="signout-btn"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign out
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
-            </Button>
+            </div>
           </div>
         </div>
       </nav>
@@ -101,6 +156,18 @@ const Navigation = () => {
             >
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
+            {user && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSignOut}
+                className="rounded-xl"
+                data-testid="mobile-signout-btn"
+                title="Sign out"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
