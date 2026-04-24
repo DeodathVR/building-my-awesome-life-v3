@@ -32,6 +32,7 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
   - All references in `PricingPage.jsx`, `HowToUsePage.jsx`, `ConcentrationGamesPage.jsx` updated
   - Removed orphaned old `HomePage.jsx` (habits-centric, unreferenced)
 - **Feb 2026**: Full 15-game Concentration Games with dark neon gaming UI (`/app/frontend/src/pages/games-page.css`) — 5 challenges × 3 games each (Memory Recall, Speed Focus, Deep Work Sprint, Single Tab Rule, Micro Workout). 5 games free, 10 gated behind Pro.
+- **Apr 24, 2026**: Wired interactive AI Coach sidebar on Concentration Games page — replaced readOnly input + `/coach` redirect with live Gemini 2.5 Flash chat via `xhrPost`. Shows tips by default, loading state, and response inline. Verified: CI build passes, live reply in ~2s.
 
 
 ## What's Been Implemented (January 15, 2025)

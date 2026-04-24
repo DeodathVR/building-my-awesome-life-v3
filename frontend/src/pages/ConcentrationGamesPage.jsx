@@ -762,6 +762,22 @@ const AI_TIPS = [
   'Based on your history, avoid multitasking before noon',
 ];
 
+const GEMINI_KEY = process.env.REACT_APP_GEMINI_API_KEY;
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+
+// XHR bypasses PostHog's fetch wrapper in production
+const xhrPost = (url, body) => new Promise((resolve, reject) => {
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', url);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = () => {
+    try { resolve({ ok: xhr.status >= 200 && xhr.status < 300, data: JSON.parse(xhr.responseText) }); }
+    catch (e) { reject(new Error('Parse error')); }
+  };
+  xhr.onerror = () => reject(new Error('Network error'));
+  xhr.send(JSON.stringify(body));
+});
+
 // ─── Main Page ───────────────────────────────────────────
 
 export default function ConcentrationGamesPage() {
@@ -771,7 +787,31 @@ export default function ConcentrationGamesPage() {
   const navigate = useNavigate();
   const { xp, level, pct } = getLvl();
   const isPro = IS_PRO();
-  const recommended = CHALLENGES[2]; // Deep Work Sprint as default AI recommendation
+  const recommended = CHALLENGES[2];
+
+  // AI Coach state
+  const [coachInput, setCoachInput] = useState('');
+  const [coachReply, setCoachReply] = useState('');
+  const [coachLoading, setCoachLoading] = useState(false);
+
+  const askCoach = async () => {
+    if (!coachInput.trim() || coachLoading) return;
+    setCoachLoading(true);
+    setCoachReply('');
+    try {
+      const prompt = `You are a focus and concentration coach for a gamified habit app. Answer concisely (2-3 sentences max). User question: "${coachInput}"`;
+      const res = await xhrPost(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 256 }
+      });
+      if (res.ok && !res.data.error) {
+        setCoachReply(res.data.candidates?.[0]?.content?.parts?.[0]?.text || 'Try again!');
+      } else {
+        setCoachReply('Could not reach AI Coach right now. Try again!');
+      }
+    } catch { setCoachReply('Could not reach AI Coach right now. Try again!'); }
+    setCoachLoading(false);
+  };
 
   const handleGameDone = (ok) => setScreen('result');
   const back = () => { setScreen(screen === 'game' ? 'challenge' : 'home'); setSelGame(null); };
@@ -864,10 +904,24 @@ export default function ConcentrationGamesPage() {
               <div className="coach-card">
                 <div className="coach-icon">🤖</div>
                 <h3 className="fh" style={{ fontSize: 16, fontWeight: 700, textAlign: 'center', marginBottom: 14 }}>AI Coach</h3>
-                {AI_TIPS.map((t, i) => <p key={i} className="coach-tip">{t}</p>)}
+                {!coachReply && !coachLoading && AI_TIPS.map((t, i) => <p key={i} className="coach-tip">{t}</p>)}
+                {coachLoading && <p className="coach-tip" style={{ fontStyle: 'italic', opacity: 0.8 }} data-testid="games-coach-loading">Thinking…</p>}
+                {coachReply && (
+                  <p className="coach-tip" style={{ background: 'rgba(0,212,170,0.08)', borderColor: 'rgba(0,212,170,0.3)', whiteSpace: 'pre-wrap' }} data-testid="games-coach-reply">{coachReply}</p>
+                )}
                 <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                  <input className="coach-input" placeholder="Ask AI Coach…" readOnly />
-                  <Link to="/coach"><button className="coach-send"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0E1A" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg></button></Link>
+                  <input
+                    className="coach-input"
+                    placeholder="Ask AI Coach…"
+                    value={coachInput}
+                    onChange={(e) => setCoachInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') askCoach(); }}
+                    disabled={coachLoading}
+                    data-testid="games-coach-input"
+                  />
+                  <button className="coach-send" onClick={askCoach} disabled={coachLoading || !coachInput.trim()} data-testid="games-coach-send-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0E1A" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                  </button>
                 </div>
                 <p style={{ fontSize: 10, color: 'var(--g-muted2)', textAlign: 'center', marginTop: 8 }}>Powered by Gemini AI</p>
               </div>
