@@ -20,7 +20,7 @@ const AppContext = createContext();
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 // Gemini API (direct — uses XHR to bypass PostHog fetch interception)
 const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 // XHR-based POST that bypasses PostHog's fetch wrapper
 const xhrPost = (url, body) => new Promise((resolve, reject) => {

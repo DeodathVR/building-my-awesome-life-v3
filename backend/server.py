@@ -411,7 +411,7 @@ async def ai_coach_chat(request: AICoachRequest):
     if gemini_key:
         try:
             import httpx
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
             payload = {
                 "contents": [{"parts": [{"text": f"{system_prompt}\n\nUser: {request.message}"}]}],
                 "generationConfig": {"temperature": 0.7, "topK": 40, "topP": 0.95, "maxOutputTokens": 1024}
