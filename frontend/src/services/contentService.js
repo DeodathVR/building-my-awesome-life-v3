@@ -225,3 +225,16 @@ export const hasGeneratedToday = async () => {
     return snap.exists() && snap.data().status === 'done';
   } catch { return false; }
 };
+
+// Fetch last N days of generation logs, newest first
+export const fetchGenerationLogs = async ({ days = 30 } = {}) => {
+  const snap = await getDocs(collection(db, GEN_LOG));
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffKey = cutoff.toISOString().split('T')[0];
+  const logs = snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(l => (l.date || l.id) >= cutoffKey)
+    .sort((a, b) => (b.date || b.id).localeCompare(a.date || a.id));
+  return logs;
+};

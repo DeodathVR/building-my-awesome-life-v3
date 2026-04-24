@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   fetchFeedPosts, createFeedPost, updateFeedPost, deleteFeedPost,
   fetchEducationTips, createEducationTip, updateEducationTip, deleteEducationTip,
-  generateDailyFeed, seedContentIfEmpty,
+  generateDailyFeed, seedContentIfEmpty, fetchGenerationLogs,
 } from '../services/contentService';
 import './shared-pages.css';
 
@@ -238,6 +238,8 @@ function FeedTab() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [search, setSearch] = useState('');
+  const [logs, setLogs] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   const FEED_TYPES = ['conspiracy', 'reframe', 'affirmation', 'quickwin', 'cosmic'];
   const FEED_VISUALS = ['lotus', 'daisy', 'circle', 'stats', 'cosmic'];
@@ -257,8 +259,12 @@ function FeedTab() {
   const load = async () => {
     setLoading(true);
     await seedContentIfEmpty();
-    const list = await fetchFeedPosts({ activeOnly: false });
+    const [list, logList] = await Promise.all([
+      fetchFeedPosts({ activeOnly: false }),
+      fetchGenerationLogs({ days: 30 }),
+    ]);
     setPosts(list);
+    setLogs(logList);
     setLoading(false);
   };
 
@@ -360,12 +366,59 @@ function FeedTab() {
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <input className="fi" style={{ width: 180 }} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." />
+          <button className="btn-o" onClick={() => setShowHistory(s => !s)} data-testid="toggle-history-btn">
+            {showHistory ? 'Hide History' : '📊 History (30d)'}
+          </button>
           <button className="btn-o" onClick={generate} disabled={generating} style={{ opacity: generating ? 0.6 : 1 }} data-testid="generate-ai-feed-btn">
             {generating ? 'Generating…' : '✨ Generate 7 AI Posts'}
           </button>
           <button className="btn-p" onClick={() => setForm({ ...defaultPost })} data-testid="new-feed-btn">+ New Post</button>
         </div>
       </div>
+
+      {showHistory && (
+        <div className="card" style={{ padding: '18px 20px', marginBottom: 20, background: 'var(--muted)' }} data-testid="generation-history-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 700 }}>Generation History</p>
+              <p style={{ fontSize: 12, color: 'var(--muted-fg)' }}>Last 30 days of auto-gen activity</p>
+            </div>
+            <button
+              className="btn-p"
+              onClick={generate}
+              disabled={generating}
+              style={{ padding: '8px 14px', fontSize: 12, opacity: generating ? 0.6 : 1 }}
+              data-testid="regenerate-today-btn"
+            >
+              {generating ? 'Re-generating…' : '🔄 Re-generate Today'}
+            </button>
+          </div>
+          {logs.length === 0 ? (
+            <p style={{ fontSize: 12, color: 'var(--muted-fg)', padding: '16px 0', textAlign: 'center' }}>
+              No generation logs yet. AI will run automatically when a user visits the Feed tomorrow.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {logs.map(l => {
+                const statusColor = l.status === 'done' ? '#10b981' : l.status === 'failed' ? '#ef4444' : '#f59e0b';
+                const statusBg = l.status === 'done' ? 'rgba(16,185,129,.12)' : l.status === 'failed' ? 'rgba(239,68,68,.12)' : 'rgba(245,158,11,.12)';
+                const when = l.generatedAt || l.startedAt;
+                const timeStr = when ? new Date(when).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+                return (
+                  <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', background: 'var(--bg)', borderRadius: 8, fontSize: 12 }} data-testid={`history-row-${l.id}`}>
+                    <span style={{ fontWeight: 700, minWidth: 92, fontFamily: 'monospace' }}>{l.date || l.id}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: statusBg, color: statusColor, textTransform: 'uppercase', minWidth: 60, textAlign: 'center' }}>{l.status || 'unknown'}</span>
+                    <span style={{ color: 'var(--muted-fg)', minWidth: 90 }}>{l.count != null ? `${l.count} posts` : '—'}</span>
+                    <span style={{ color: 'var(--muted-fg)', minWidth: 70 }}>{timeStr}</span>
+                    <span style={{ color: 'var(--muted-fg)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>{l.source || '—'}</span>
+                    {l.error && <span style={{ color: '#ef4444', fontSize: 11, flex: 1, textAlign: 'right', fontStyle: 'italic' }} title={l.error}>{l.error.slice(0, 60)}{l.error.length > 60 ? '…' : ''}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
       {loading ? (
         <p style={{ color: 'var(--muted-fg)', padding: 20 }}>Loading…</p>
       ) : filtered.length === 0 ? (
