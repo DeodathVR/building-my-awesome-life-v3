@@ -1,0 +1,106 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────
+//  Awesome Life Habits — Firestore Security Rules
+// ─────────────────────────────────────────────────────────────────
+//  Hardcoded admin: sparksofmotivation1001@gmail.com
+//  • Per-user data: habits (scoped by userId)
+//  • Global content: feed_posts, education_tips, challenges, community_posts
+//  • Engagement counters: any authed user can update likes/saves/shares
+//    on feed_posts (other fields locked to admin)
+//  • Default-deny on everything not explicitly allowed
+// ─────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helpers ─────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+             request.auth.token.email == 'sparksofmotivation1001@gmail.com';
+    }
+
+    function isOwnerOf(data) {
+      return isSignedIn() &&
+             'userId' in data &&
+             request.auth.uid == data.userId;
+    }
+
+    // Validates that an update only touches engagement counter fields
+    function onlyEngagementFieldsChanged() {
+      return request.resource.data.diff(resource.data)
+               .affectedKeys()
+               .hasOnly(['likes', 'saves', 'shares']);
+    }
+
+    // ─── Per-user collections ────────────────────────────────────
+
+    // habits — each doc has a userId; only owner (or admin for cleanup)
+    match /habits/{habitId} {
+      allow read: if isAdmin() || isOwnerOf(resource.data);
+      allow create: if isSignedIn() &&
+                      'userId' in request.resource.data &&
+                      request.auth.uid == request.resource.data.userId;
+      allow update: if isOwnerOf(resource.data) &&
+                      request.resource.data.userId == resource.data.userId;
+      // Owner can delete own habits; admin can delete legacy docs (no userId)
+      allow delete: if isAdmin() ||
+                      (isSignedIn() &&
+                       'userId' in resource.data &&
+                       request.auth.uid == resource.data.userId);
+    }
+
+    // ─── Global content (admin-managed) ──────────────────────────
+
+    // feed_posts — readable by all signed-in users
+    //   • Admin: full CRUD
+    //   • Regular users: can only update likes/saves/shares (engagement)
+    match /feed_posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+      allow update: if isAdmin() ||
+                      (isSignedIn() && onlyEngagementFieldsChanged());
+    }
+
+    // education_tips — PUBLIC read (logged-out visitors browse /education for SEO)
+    //                  write by admin only
+    match /education_tips/{tipId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // feed_generation_log — read by all signed-in (auto-daily check)
+    //   • Write open to any signed-in user for now (frontend triggers AI gen)
+    //   • Will be tightened in P0.3 when AI moves to backend
+    match /feed_generation_log/{logId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // community_posts — any signed-in user can read & create posts
+    //   • Mutation/deletion: admin only (until per-post author tracking added)
+    match /community_posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isAdmin() ||
+                      (isSignedIn() && onlyEngagementFieldsChanged());
+      allow delete: if isAdmin();
+    }
+
+    // challenges — read by all signed-in, write by admin
+    match /challenges/{challengeId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ─── Default deny ────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
