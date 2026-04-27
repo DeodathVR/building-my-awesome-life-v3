@@ -1,20 +1,11 @@
 rules_version = '2';
 
-// ─────────────────────────────────────────────────────────────────
-//  Awesome Life Habits — Firestore Security Rules
-// ─────────────────────────────────────────────────────────────────
-//  Hardcoded admin: sparksofmotivation1001@gmail.com
-//  • Per-user data: habits (scoped by userId)
-//  • Global content: feed_posts, education_tips, challenges, community_posts
-//  • Engagement counters: any authed user can update likes/saves/shares
-//    on feed_posts (other fields locked to admin)
-//  • Default-deny on everything not explicitly allowed
-// ─────────────────────────────────────────────────────────────────
+// Awesome Life Habits - Firestore Security Rules
+// Hardcoded admin: sparksofmotivation1001@gmail.com
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ─── Helpers ─────────────────────────────────────────────────
     function isSignedIn() {
       return request.auth != null;
     }
@@ -30,16 +21,13 @@ service cloud.firestore {
              request.auth.uid == data.userId;
     }
 
-    // Validates that an update only touches engagement counter fields
     function onlyEngagementFieldsChanged() {
       return request.resource.data.diff(resource.data)
                .affectedKeys()
                .hasOnly(['likes', 'saves', 'shares']);
     }
 
-    // ─── Per-user collections ────────────────────────────────────
-
-    // habits — each doc has a userId; only owner (or admin for cleanup)
+    // habits - per-user (only owner can read/write own habits)
     match /habits/{habitId} {
       allow read: if isAdmin() || isOwnerOf(resource.data);
       allow create: if isSignedIn() &&
@@ -47,18 +35,14 @@ service cloud.firestore {
                       request.auth.uid == request.resource.data.userId;
       allow update: if isOwnerOf(resource.data) &&
                       request.resource.data.userId == resource.data.userId;
-      // Owner can delete own habits; admin can delete legacy docs (no userId)
       allow delete: if isAdmin() ||
                       (isSignedIn() &&
                        'userId' in resource.data &&
                        request.auth.uid == resource.data.userId);
     }
 
-    // ─── Global content (admin-managed) ──────────────────────────
-
-    // feed_posts — readable by all signed-in users
-    //   • Admin: full CRUD
-    //   • Regular users: can only update likes/saves/shares (engagement)
+    // feed_posts - any signed-in user can read
+    // Admin: full CRUD. Other users: only update engagement counters.
     match /feed_posts/{postId} {
       allow read: if isSignedIn();
       allow create: if isAdmin();
@@ -67,23 +51,19 @@ service cloud.firestore {
                       (isSignedIn() && onlyEngagementFieldsChanged());
     }
 
-    // education_tips — PUBLIC read (logged-out visitors browse /education for SEO)
-    //                  write by admin only
+    // education_tips - PUBLIC read for SEO, admin write only
     match /education_tips/{tipId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // feed_generation_log — read by all signed-in (auto-daily check)
-    //   • Write open to any signed-in user for now (frontend triggers AI gen)
-    //   • Will be tightened in P0.3 when AI moves to backend
+    // feed_generation_log - any signed-in user (will tighten in P0.3)
     match /feed_generation_log/{logId} {
       allow read: if isSignedIn();
       allow write: if isSignedIn();
     }
 
-    // community_posts — any signed-in user can read & create posts
-    //   • Mutation/deletion: admin only (until per-post author tracking added)
+    // community_posts - any signed-in user can read & create
     match /community_posts/{postId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn();
@@ -92,13 +72,13 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // challenges — read by all signed-in, write by admin
+    // challenges - any signed-in user can read, admin writes
     match /challenges/{challengeId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // ─── Default deny ────────────────────────────────────────────
+    // Default deny on everything else
     match /{document=**} {
       allow read, write: if false;
     }
