@@ -18,11 +18,8 @@ import {
 
 const AppContext = createContext();
 
-// Backend URL for API calls (Glow Up image generation)
+// Backend URL for API calls (Glow Up image generation + AI chat proxy)
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-// Gemini API (direct — uses XHR to bypass PostHog fetch interception)
-const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 // XHR-based POST that bypasses PostHog's fetch wrapper
 const xhrPost = (url, body) => new Promise((resolve, reject) => {
@@ -488,9 +485,9 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Chat with AI coach — uses XHR to bypass PostHog's fetch interception in production
+  // Chat with AI coach — proxies through backend (hides Gemini API key)
   const chatWithCoach = async (message, sessionId = null) => {
-    if (!GEMINI_API_KEY) throw new Error('Gemini API key not configured. Add REACT_APP_GEMINI_API_KEY to your environment.');
+    if (!BACKEND_URL) throw new Error('Backend URL not configured.');
 
     const systemPrompt = `You are a supportive and knowledgeable AI habit coach. Your role is to:
 - Help users build and maintain positive habits
@@ -501,22 +498,20 @@ export const AppProvider = ({ children }) => {
 - Keep responses concise but helpful (2-3 paragraphs max)
 Current user habits: ${habits.map(h => h.name).join(', ')}`;
 
-    const result = await xhrPost(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-      contents: [{ parts: [{ text: `${systemPrompt}\n\nUser: ${message}` }] }],
-      generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 1024 }
+    const result = await xhrPost(`${BACKEND_URL}/api/ai/chat`, {
+      message,
+      system_prompt: systemPrompt,
+      temperature: 0.7,
+      max_output_tokens: 1024,
     });
 
-    if (!result.ok || result.data.error) {
-      const err = result.data.error || {};
-      if (err.code === 429) throw new Error('API quota exceeded. Please try again later.');
-      if (err.code === 403) throw new Error('API key invalid or missing permissions.');
-      throw new Error(err.message || `Request failed with status ${result.status}`);
+    if (!result.ok) {
+      const err = result.data?.detail || `Request failed with status ${result.status}`;
+      if (result.status === 429) throw new Error(err);
+      throw new Error(err);
     }
 
-    const aiResponse = result.data.candidates?.[0]?.content?.parts?.[0]?.text
-      || "I'm having trouble responding right now. Please try again.";
-
-    return { response: aiResponse, session_id: sessionId || generateId() };
+    return { response: result.data.response || "I'm having trouble responding right now.", session_id: sessionId || generateId() };
   };
 
   const value = {

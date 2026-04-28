@@ -762,8 +762,7 @@ const AI_TIPS = [
   'Based on your history, avoid multitasking before noon',
 ];
 
-const GEMINI_KEY = process.env.REACT_APP_GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // XHR bypasses PostHog's fetch wrapper in production
 const xhrPost = (url, body) => new Promise((resolve, reject) => {
@@ -771,7 +770,7 @@ const xhrPost = (url, body) => new Promise((resolve, reject) => {
   xhr.open('POST', url);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.onload = () => {
-    try { resolve({ ok: xhr.status >= 200 && xhr.status < 300, data: JSON.parse(xhr.responseText) }); }
+    try { resolve({ status: xhr.status, ok: xhr.status >= 200 && xhr.status < 300, data: JSON.parse(xhr.responseText) }); }
     catch (e) { reject(new Error('Parse error')); }
   };
   xhr.onerror = () => reject(new Error('Network error'));
@@ -799,13 +798,16 @@ export default function ConcentrationGamesPage() {
     setCoachLoading(true);
     setCoachReply('');
     try {
-      const prompt = `You are a focus and concentration coach for a gamified habit app. Answer concisely (2-3 sentences max). User question: "${coachInput}"`;
-      const res = await xhrPost(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 256 }
+      const res = await xhrPost(`${BACKEND_URL}/api/ai/chat`, {
+        message: coachInput,
+        system_prompt: 'You are a focus and concentration coach for a gamified habit app. Answer concisely (2-3 sentences max).',
+        temperature: 0.7,
+        max_output_tokens: 256,
       });
-      if (res.ok && !res.data.error) {
-        setCoachReply(res.data.candidates?.[0]?.content?.parts?.[0]?.text || 'Try again!');
+      if (res.ok) {
+        setCoachReply(res.data.response || 'Try again!');
+      } else if (res.status === 429) {
+        setCoachReply('AI Coach is busy — please slow down a bit and try in a moment.');
       } else {
         setCoachReply('Could not reach AI Coach right now. Try again!');
       }

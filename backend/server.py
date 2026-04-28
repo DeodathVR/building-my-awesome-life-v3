@@ -1,15 +1,19 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import json
+import time
+from collections import defaultdict
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone
 from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
+import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -269,6 +273,182 @@ PRESET_CHALLENGES = [
 @api_router.get("/challenges")
 async def get_challenges():
     return PRESET_CHALLENGES
+
+# ----- AI Proxy (hides Gemini API key from frontend) -----
+
+GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_BASE_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+
+# Simple in-memory rate limiter: 100 requests/hour per IP
+_RATE_LIMIT_MAX = 100
+_RATE_LIMIT_WINDOW = 3600  # 1 hour
+_rate_limit_store: Dict[str, List[float]] = defaultdict(list)
+
+def _client_ip(request: Request) -> str:
+    # Honor common proxy headers (Render, Vercel, Cloudflare set these)
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+def _check_rate_limit(ip: str):
+    now = time.time()
+    history = _rate_limit_store[ip]
+    # Drop entries outside the window
+    fresh = [t for t in history if now - t < _RATE_LIMIT_WINDOW]
+    if len(fresh) >= _RATE_LIMIT_MAX:
+        oldest = fresh[0]
+        retry = int(_RATE_LIMIT_WINDOW - (now - oldest))
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded ({_RATE_LIMIT_MAX}/hour). Try again in {retry}s.",
+            headers={"Retry-After": str(retry)},
+        )
+    fresh.append(now)
+    _rate_limit_store[ip] = fresh
+
+class AIChatRequest(BaseModel):
+    """Generic chat request used by AI Coach, Cosmic Reframer, Thought Tracker, Games Coach"""
+    message: str
+    system_prompt: Optional[str] = None
+    history: Optional[List[Dict[str, str]]] = None  # [{"role":"user"|"model","text":"..."}]
+    temperature: float = 0.7
+    max_output_tokens: int = 1024
+
+@api_router.post("/ai/chat")
+async def ai_chat(payload: AIChatRequest, request: Request):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+    _check_rate_limit(_client_ip(request))
+
+    # Build Gemini contents
+    contents: List[Dict[str, Any]] = []
+    if payload.system_prompt:
+        # Gemini doesn't have a separate system role; prepend to first user turn
+        first_user_text = f"{payload.system_prompt}\n\n{payload.message}"
+    else:
+        first_user_text = payload.message
+
+    if payload.history:
+        for turn in payload.history:
+            role = "user" if turn.get("role") == "user" else "model"
+            contents.append({"role": role, "parts": [{"text": turn.get("text", "")}]})
+        contents.append({"role": "user", "parts": [{"text": payload.message}]})
+    else:
+        contents.append({"role": "user", "parts": [{"text": first_user_text}]})
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client_http:
+            resp = await client_http.post(
+                f"{GEMINI_BASE_URL}?key={api_key}",
+                json={
+                    "contents": contents,
+                    "generationConfig": {
+                        "temperature": payload.temperature,
+                        "topK": 40,
+                        "topP": 0.95,
+                        "maxOutputTokens": payload.max_output_tokens,
+                    },
+                },
+            )
+        data = resp.json()
+        if resp.status_code != 200 or data.get("error"):
+            msg = data.get("error", {}).get("message", f"Gemini error {resp.status_code}")
+            logging.error(f"AI chat upstream error: {msg}")
+            raise HTTPException(status_code=502, detail=msg)
+        text = (
+            data.get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+        )
+        return {"response": text}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"AI chat error: {e}")
+        raise HTTPException(status_code=500, detail=f"AI chat failed: {e}")
+
+
+class FeedGenerateRequest(BaseModel):
+    winning_types: Optional[List[str]] = None  # bias hint from engagement analytics
+
+@api_router.post("/ai/generate-feed")
+async def ai_generate_feed(payload: FeedGenerateRequest, request: Request):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+    _check_rate_limit(_client_ip(request))
+
+    hint = ""
+    if payload.winning_types:
+        hint = (
+            f"\nENGAGEMENT SIGNAL: Over the past week, users are engaging most with these types: "
+            f"{', '.join(payload.winning_types)}. Include at least 2-3 slides of these winning "
+            f"types in your 7, while still keeping variety across all 5 types."
+        )
+
+    prompt = (
+        "You are writing short, uplifting micro-content for a habit-tracking app called "
+        "\"Awesome Life\". Generate exactly 7 NEW and UNIQUE feed slides for today. Each "
+        "slide must be one of these types: conspiracy (whimsical reframe of setbacks), "
+        "reframe (positive perspective flip), affirmation (mindful encouragement), "
+        "quickwin (community-style win mention), cosmic (cosmic/universe themed motivation).\n\n"
+        "Return ONLY a valid JSON array (no markdown, no prose) with exactly 7 objects, each "
+        "with these fields:\n"
+        "- \"type\": one of \"conspiracy\" | \"reframe\" | \"affirmation\" | \"quickwin\" | \"cosmic\"\n"
+        "- \"category\": matching display label — \"Witty Conspiracy\" | \"Awesome Reframe\" | "
+        "\"Bloom Moment\" | \"Quick Win Spotlight\" | \"Cosmic Teaser\"\n"
+        "- \"visual\": one of \"lotus\" | \"daisy\" | \"circle\" | \"stats\" | \"cosmic\"\n"
+        "- \"text\": the main message, 1-2 sentences, warm and poetic, can include one emoji max\n"
+        "- \"subtext\": short tag line, 2-5 words\n\n"
+        "Keep voice: gentle, witty, affirming. Mix the 5 types across the 7 slides. DO NOT "
+        f"repeat any of the already-seeded evergreen phrases.{hint}"
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=45) as client_http:
+            resp = await client_http.post(
+                f"{GEMINI_BASE_URL}?key={api_key}",
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {
+                        "temperature": 0.9, "topK": 40, "topP": 0.95,
+                        "maxOutputTokens": 2048,
+                        "responseMimeType": "application/json",
+                    },
+                },
+            )
+        data = resp.json()
+        if resp.status_code != 200 or data.get("error"):
+            msg = data.get("error", {}).get("message", f"Gemini error {resp.status_code}")
+            raise HTTPException(status_code=502, detail=msg)
+        raw = (
+            data.get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+        )
+        # Strip ```json fences if present
+        cleaned = raw.replace("```json", "").replace("```", "").strip()
+        try:
+            items = json.loads(cleaned)
+        except json.JSONDecodeError:
+            # Try to slice between first [ and last ]
+            start, end = cleaned.find("["), cleaned.rfind("]")
+            if start == -1 or end == -1:
+                raise HTTPException(status_code=502, detail="AI returned unparseable JSON")
+            items = json.loads(cleaned[start:end + 1])
+        if not isinstance(items, list):
+            raise HTTPException(status_code=502, detail="AI did not return a list")
+        return {"posts": items}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"AI feed gen error: {e}")
+        raise HTTPException(status_code=500, detail=f"AI feed gen failed: {e}")
+
 
 # ----- AI Coach -----
 

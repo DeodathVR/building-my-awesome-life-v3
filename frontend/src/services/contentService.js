@@ -9,8 +9,7 @@ import {
   collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, orderBy, where, increment,
 } from 'firebase/firestore';
 
-const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // XHR POST — bypasses PostHog fetch interception
 const xhrPost = (url, body) => new Promise((resolve, reject) => {
@@ -188,22 +187,6 @@ export const fetchWinningTypes = async ({ days = 7 } = {}) => {
     .slice(0, 2)
     .map(([t]) => t);
 };
-const buildFeedPrompt = (winningTypes = []) => {
-  const hint = winningTypes.length
-    ? `\nENGAGEMENT SIGNAL: Over the past week, users are engaging most with these types: ${winningTypes.join(', ')}. Include at least 2-3 slides of these winning types in your 7, while still keeping variety across all 5 types.`
-    : '';
-  return `You are writing short, uplifting micro-content for a habit-tracking app called "Awesome Life". Generate exactly 7 NEW and UNIQUE feed slides for today. Each slide must be one of these types: conspiracy (whimsical reframe of setbacks), reframe (positive perspective flip), affirmation (mindful encouragement), quickwin (community-style win mention), cosmic (cosmic/universe themed motivation).
-
-Return ONLY a valid JSON array (no markdown, no prose) with exactly 7 objects, each with these fields:
-- "type": one of "conspiracy" | "reframe" | "affirmation" | "quickwin" | "cosmic"
-- "category": matching display label — "Witty Conspiracy" | "Awesome Reframe" | "Bloom Moment" | "Quick Win Spotlight" | "Cosmic Teaser"
-- "visual": one of "lotus" | "daisy" | "circle" | "stats" | "cosmic"
-- "text": the main message, 1-2 sentences, warm and poetic, can include one emoji max
-- "subtext": short tag line, 2-5 words
-
-Keep voice: gentle, witty, affirming. Mix the 5 types across the 7 slides. DO NOT repeat any of the already-seeded evergreen phrases.${hint}`;
-};
-
 const GRADIENTS_BY_TYPE = {
   conspiracy: 'from-primary/20 via-transparent to-transparent',
   reframe: 'from-accent/20 via-transparent to-transparent',
@@ -215,21 +198,9 @@ const GRADIENTS_BY_TYPE = {
 const VALID_TYPES = ['conspiracy', 'reframe', 'affirmation', 'quickwin', 'cosmic'];
 const VALID_VISUALS = ['lotus', 'daisy', 'circle', 'stats', 'cosmic'];
 
-const parseGeminiJSON = (text) => {
-  if (!text) return [];
-  // Strip markdown fences if present
-  const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-  // Find the JSON array
-  const start = cleaned.indexOf('[');
-  const end = cleaned.lastIndexOf(']');
-  if (start === -1 || end === -1) return [];
-  try { return JSON.parse(cleaned.slice(start, end + 1)); }
-  catch { return []; }
-};
-
 // Generates 7 new slides, writes to Firestore, logs today. Returns count written.
 export const generateDailyFeed = async ({ source = 'auto', force = false } = {}) => {
-  if (!GEMINI_API_KEY) throw new Error('REACT_APP_GEMINI_API_KEY not set');
+  if (!BACKEND_URL) throw new Error('REACT_APP_BACKEND_URL not set');
 
   const today = todayKey();
   const logRef = doc(db, GEN_LOG, today);
@@ -248,20 +219,17 @@ export const generateDailyFeed = async ({ source = 'auto', force = false } = {})
   let winningTypes = [];
   try { winningTypes = await fetchWinningTypes({ days: 7 }); } catch { /* ignore */ }
 
-  const res = await xhrPost(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-    contents: [{ parts: [{ text: buildFeedPrompt(winningTypes) }] }],
-    generationConfig: { temperature: 0.9, topK: 40, topP: 0.95, maxOutputTokens: 2048, responseMimeType: 'application/json' },
+  const res = await xhrPost(`${BACKEND_URL}/api/ai/generate-feed`, {
+    winning_types: winningTypes,
   });
 
-  if (!res.ok || res.data.error) {
-    const msg = res.data?.error?.message || `status ${res.status}`;
+  if (!res.ok) {
+    const msg = res.data?.detail || `status ${res.status}`;
     await setDoc(logRef, { date: today, status: 'failed', error: msg, source }, { merge: true });
-    throw new Error(`Gemini error: ${msg}`);
+    throw new Error(`AI gen error: ${msg}`);
   }
 
-  const text = res.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  const items = parseGeminiJSON(text);
-
+  const items = Array.isArray(res.data?.posts) ? res.data.posts : [];
   const valid = items.filter(i => i && i.text && VALID_TYPES.includes(i.type));
   let written = 0;
   for (const i of valid.slice(0, 7)) {
