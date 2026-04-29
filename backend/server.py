@@ -18,10 +18,16 @@ import httpx
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# MongoDB connection (optional — app works without it; only glow_up history persistence needs it)
+mongo_url = os.environ.get('MONGO_URL', '').strip()
+db_name = os.environ.get('DB_NAME', 'awesome_life').strip() or 'awesome_life'
+if mongo_url:
+    client = AsyncIOMotorClient(mongo_url)
+    db = client[db_name]
+else:
+    client = None
+    db = None
+    logging.warning("MONGO_URL not set — running without MongoDB. Glow Up history persistence will be disabled.")
 
 # Create the main app without a prefix
 app = FastAPI()
