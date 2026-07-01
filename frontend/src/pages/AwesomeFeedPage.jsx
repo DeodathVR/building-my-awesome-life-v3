@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { fetchFeedPosts, generateDailyFeed, hasGeneratedToday, seedContentIfEmpty, incrementPostEngagement } from '../services/contentService';
+import { useAuth } from '../context/AuthContext';
 
 // LocalStorage keys to remember per-user actions (prevents double-counting)
 const LIKED_KEY = 'alu_feed_liked';
@@ -102,6 +103,7 @@ const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const AwesomeFeedPage = () => {
   const navigate = useNavigate();
   const { habits, stats } = useApp();
+  const { user } = useAuth();
   const [feedItems, setFeedItems] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [savedItems, setSavedItems] = useState(() => loadSet(SAVED_KEY));
@@ -139,7 +141,7 @@ const AwesomeFeedPage = () => {
         const already = await hasGeneratedToday();
         if (!already) {
           setGeneratingDaily(true);
-          const result = await generateDailyFeed({ source: 'auto' });
+          const result = await generateDailyFeed({ source: 'auto', userId: user?.uid });
           if (!cancelled && result && !result.skipped && result.count > 0) {
             toast.success(`${result.count} fresh AI slides added ✨`);
             await loadFeed();
@@ -152,7 +154,7 @@ const AwesomeFeedPage = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [loadFeed]);
+  }, [loadFeed, user?.uid]);
 
   // Auto-animate visuals
   useEffect(() => {

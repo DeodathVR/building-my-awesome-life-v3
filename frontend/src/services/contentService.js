@@ -12,10 +12,13 @@ import {
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // XHR POST — bypasses PostHog fetch interception
-const xhrPost = (url, body) => new Promise((resolve, reject) => {
+const xhrPost = (url, body, extraHeaders = {}) => new Promise((resolve, reject) => {
   const xhr = new XMLHttpRequest();
   xhr.open('POST', url);
   xhr.setRequestHeader('Content-Type', 'application/json');
+  for (const [k, v] of Object.entries(extraHeaders)) {
+    if (v != null) xhr.setRequestHeader(k, String(v));
+  }
   xhr.onload = () => {
     try { resolve({ status: xhr.status, ok: xhr.status >= 200 && xhr.status < 300, data: JSON.parse(xhr.responseText) }); }
     catch (e) { reject(new Error(`Parse error (${xhr.status})`)); }
@@ -199,7 +202,7 @@ const VALID_TYPES = ['conspiracy', 'reframe', 'affirmation', 'quickwin', 'cosmic
 const VALID_VISUALS = ['lotus', 'daisy', 'circle', 'stats', 'cosmic'];
 
 // Generates 7 new slides, writes to Firestore, logs today. Returns count written.
-export const generateDailyFeed = async ({ source = 'auto', force = false } = {}) => {
+export const generateDailyFeed = async ({ source = 'auto', force = false, userId = null } = {}) => {
   if (!BACKEND_URL) throw new Error('REACT_APP_BACKEND_URL not set');
 
   const today = todayKey();
@@ -219,9 +222,11 @@ export const generateDailyFeed = async ({ source = 'auto', force = false } = {})
   let winningTypes = [];
   try { winningTypes = await fetchWinningTypes({ days: 7 }); } catch { /* ignore */ }
 
-  const res = await xhrPost(`${BACKEND_URL}/api/ai/generate-feed`, {
-    winning_types: winningTypes,
-  });
+  const res = await xhrPost(
+    `${BACKEND_URL}/api/ai/generate-feed`,
+    { winning_types: winningTypes },
+    { 'X-User-Id': userId }
+  );
 
   if (!res.ok) {
     const msg = res.data?.detail || `status ${res.status}`;

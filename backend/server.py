@@ -5,15 +5,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import json
-import time
 from collections import defaultdict
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone
 from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
-import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -280,94 +278,193 @@ PRESET_CHALLENGES = [
 async def get_challenges():
     return PRESET_CHALLENGES
 
-# ----- AI Proxy (hides Gemini API key from frontend) -----
 
-GEMINI_MODEL = "gemini-2.5-flash"
-GEMINI_BASE_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+# ----- Health check (for UptimeRobot / Render probe) -----
+@api_router.get("/health")
+async def health():
+    """Lightweight health endpoint — always returns 200 while the server is running.
+    Reports Emergent LLM key presence + current global usage counters so you can
+    monitor from a browser."""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    month = datetime.now(timezone.utc).strftime("%Y-%m")
+    return {
+        "status": "ok",
+        "time_utc": datetime.now(timezone.utc).isoformat(),
+        "emergent_llm_key_present": bool(os.environ.get("EMERGENT_LLM_KEY")),
+        "mongo_connected": client is not None,
+        "usage": {
+            "global_day_used": _usage_counters.get(f"global:day:{today}", 0),
+            "global_day_cap": _GLOBAL_CALLS_DAILY,
+            "global_month_used": _usage_counters.get(f"global:month:{month}", 0),
+            "global_month_cap": _GLOBAL_CALLS_MONTHLY,
+        },
+    }
 
-# Simple in-memory rate limiter: 100 requests/hour per IP
-_RATE_LIMIT_MAX = 100
-_RATE_LIMIT_WINDOW = 3600  # 1 hour
-_rate_limit_store: Dict[str, List[float]] = defaultdict(list)
+# ----- AI Proxy (Emergent LLM Key with multi-layer abuse protection) -----
+
+# Abuse-protection quotas (buckets: today's date UTC as YYYY-MM-DD)
+_CHAT_PER_USER_DAILY = 20        # AI chats per authenticated user per day
+_FEED_PER_USER_DAILY = 3         # feed generations per user per day
+_CHAT_PER_IP_DAILY = 30          # unauthed / fallback IP-based cap
+_GLOBAL_CALLS_DAILY = 2000       # hard ceiling across all users/day
+_GLOBAL_CALLS_MONTHLY = 40000    # secondary ceiling / month
+
+# In-memory usage counters — resets on Render restart which is fine as a safety fallback
+# Structure: { "bucket_key" -> int_count }
+_usage_counters: Dict[str, int] = defaultdict(int)
+
+def _today_utc() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+def _this_month_utc() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m")
 
 def _client_ip(request: Request) -> str:
-    # Honor common proxy headers (Render, Vercel, Cloudflare set these)
     fwd = request.headers.get("x-forwarded-for")
     if fwd:
         return fwd.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
 
-def _check_rate_limit(ip: str):
-    now = time.time()
-    history = _rate_limit_store[ip]
-    # Drop entries outside the window
-    fresh = [t for t in history if now - t < _RATE_LIMIT_WINDOW]
-    if len(fresh) >= _RATE_LIMIT_MAX:
-        oldest = fresh[0]
-        retry = int(_RATE_LIMIT_WINDOW - (now - oldest))
+def _user_id(request: Request) -> Optional[str]:
+    """Extract Firebase UID from X-User-Id header. Pragmatic MVP approach —
+    frontend passes user.uid from Firebase Auth. Not cryptographically verified
+    but bypass only lets an attacker rotate identities (which they could also
+    do by creating new Firebase accounts). IP-based and global caps are the
+    hard defenses."""
+    uid = request.headers.get("x-user-id", "").strip()
+    return uid if uid else None
+
+def _consume_quota(request: Request, kind: str) -> Dict[str, int]:
+    """Consume 1 quota unit for this request. Raises 429 if any limit hit.
+    Returns dict with remaining counts for observability.
+    kind: 'chat' or 'feed'"""
+    today = _today_utc()
+    month = _this_month_utc()
+
+    # Layer 1: Global monthly cap (hardest ceiling)
+    g_month = _usage_counters[f"global:month:{month}"]
+    if g_month >= _GLOBAL_CALLS_MONTHLY:
         raise HTTPException(
             status_code=429,
-            detail=f"Rate limit exceeded ({_RATE_LIMIT_MAX}/hour). Try again in {retry}s.",
-            headers={"Retry-After": str(retry)},
+            detail="Monthly AI quota reached across all users. Please try again next month.",
+            headers={"Retry-After": "86400"},
         )
-    fresh.append(now)
-    _rate_limit_store[ip] = fresh
+
+    # Layer 2: Global daily cap
+    g_day = _usage_counters[f"global:day:{today}"]
+    if g_day >= _GLOBAL_CALLS_DAILY:
+        raise HTTPException(
+            status_code=429,
+            detail="Daily AI quota reached across all users. Please try again tomorrow.",
+            headers={"Retry-After": "3600"},
+        )
+
+    # Layer 3: Per-user daily cap (if authed)
+    uid = _user_id(request)
+    if uid:
+        per_user_cap = _CHAT_PER_USER_DAILY if kind == "chat" else _FEED_PER_USER_DAILY
+        u_day = _usage_counters[f"user:{uid}:{kind}:{today}"]
+        if u_day >= per_user_cap:
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    f"You've hit today's AI limit ({per_user_cap} {kind} requests). "
+                    f"Upgrade to Pro for unlimited access, or come back tomorrow!"
+                ),
+                headers={"Retry-After": "3600", "X-Quota-Reset": "midnight-utc"},
+            )
+    else:
+        # Layer 4: Per-IP daily cap (fallback when unauthed)
+        ip = _client_ip(request)
+        ip_day = _usage_counters[f"ip:{ip}:{kind}:{today}"]
+        if ip_day >= _CHAT_PER_IP_DAILY:
+            raise HTTPException(
+                status_code=429,
+                detail="Daily anonymous limit reached. Please sign in to continue.",
+                headers={"Retry-After": "3600"},
+            )
+
+    # Commit — increment all applicable counters atomically
+    _usage_counters[f"global:day:{today}"] += 1
+    _usage_counters[f"global:month:{month}"] += 1
+    if uid:
+        _usage_counters[f"user:{uid}:{kind}:{today}"] += 1
+    else:
+        ip = _client_ip(request)
+        _usage_counters[f"ip:{ip}:{kind}:{today}"] += 1
+
+    return {
+        "global_day_used": _usage_counters[f"global:day:{today}"],
+        "global_day_cap": _GLOBAL_CALLS_DAILY,
+    }
+
+
+async def _emergent_chat(system_message: str, user_text: str, temperature: float = 0.7,
+                          max_tokens: int = 1024, session_id: Optional[str] = None,
+                          json_mode: bool = False) -> str:
+    """Send a one-shot chat via Emergent LLM (gemini-2.5-flash) and return the text response."""
+    emergent_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not emergent_key:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
+
+    sid = session_id or str(uuid.uuid4())
+    if json_mode:
+        # Nudge the model to reply strictly in JSON
+        system_message = system_message + "\n\nRespond with valid JSON only. No markdown, no prose outside JSON."
+
+    chat = (
+        LlmChat(
+            api_key=emergent_key,
+            session_id=sid,
+            system_message=system_message,
+        )
+        .with_model("gemini", "gemini-2.5-flash")
+        .with_params(temperature=temperature, max_tokens=max_tokens)
+    )
+    reply = await chat.send_message(UserMessage(text=user_text))
+    return str(reply) if reply is not None else ""
+
+
+@api_router.get("/ai/usage")
+async def ai_usage(request: Request):
+    """Returns current user + global quota consumption. Frontend can poll to show
+    the user their remaining chats today."""
+    today = _today_utc()
+    month = _this_month_utc()
+    uid = _user_id(request)
+    usage = {
+        "global_day_used": _usage_counters[f"global:day:{today}"],
+        "global_day_cap": _GLOBAL_CALLS_DAILY,
+        "global_month_used": _usage_counters[f"global:month:{month}"],
+        "global_month_cap": _GLOBAL_CALLS_MONTHLY,
+    }
+    if uid:
+        usage["user_chat_used"] = _usage_counters[f"user:{uid}:chat:{today}"]
+        usage["user_chat_cap"] = _CHAT_PER_USER_DAILY
+        usage["user_feed_used"] = _usage_counters[f"user:{uid}:feed:{today}"]
+        usage["user_feed_cap"] = _FEED_PER_USER_DAILY
+    return usage
+
 
 class AIChatRequest(BaseModel):
     """Generic chat request used by AI Coach, Cosmic Reframer, Thought Tracker, Games Coach"""
     message: str
     system_prompt: Optional[str] = None
-    history: Optional[List[Dict[str, str]]] = None  # [{"role":"user"|"model","text":"..."}]
+    history: Optional[List[Dict[str, str]]] = None  # kept for API compat, not used
     temperature: float = 0.7
     max_output_tokens: int = 1024
 
+
 @api_router.post("/ai/chat")
 async def ai_chat(payload: AIChatRequest, request: Request):
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="AI service not configured")
-    _check_rate_limit(_client_ip(request))
-
-    # Build Gemini contents
-    contents: List[Dict[str, Any]] = []
-    if payload.system_prompt:
-        # Gemini doesn't have a separate system role; prepend to first user turn
-        first_user_text = f"{payload.system_prompt}\n\n{payload.message}"
-    else:
-        first_user_text = payload.message
-
-    if payload.history:
-        for turn in payload.history:
-            role = "user" if turn.get("role") == "user" else "model"
-            contents.append({"role": role, "parts": [{"text": turn.get("text", "")}]})
-        contents.append({"role": "user", "parts": [{"text": payload.message}]})
-    else:
-        contents.append({"role": "user", "parts": [{"text": first_user_text}]})
-
+    _consume_quota(request, kind="chat")
+    system_msg = payload.system_prompt or "You are a helpful, warm, encouraging assistant."
     try:
-        async with httpx.AsyncClient(timeout=30) as client_http:
-            resp = await client_http.post(
-                f"{GEMINI_BASE_URL}?key={api_key}",
-                json={
-                    "contents": contents,
-                    "generationConfig": {
-                        "temperature": payload.temperature,
-                        "topK": 40,
-                        "topP": 0.95,
-                        "maxOutputTokens": payload.max_output_tokens,
-                    },
-                },
-            )
-        data = resp.json()
-        if resp.status_code != 200 or data.get("error"):
-            msg = data.get("error", {}).get("message", f"Gemini error {resp.status_code}")
-            logging.error(f"AI chat upstream error: {msg}")
-            raise HTTPException(status_code=502, detail=msg)
-        text = (
-            data.get("candidates", [{}])[0]
-            .get("content", {})
-            .get("parts", [{}])[0]
-            .get("text", "")
+        text = await _emergent_chat(
+            system_message=system_msg,
+            user_text=payload.message,
+            temperature=payload.temperature,
+            max_tokens=payload.max_output_tokens,
         )
         return {"response": text}
     except HTTPException:
@@ -380,12 +477,10 @@ async def ai_chat(payload: AIChatRequest, request: Request):
 class FeedGenerateRequest(BaseModel):
     winning_types: Optional[List[str]] = None  # bias hint from engagement analytics
 
+
 @api_router.post("/ai/generate-feed")
 async def ai_generate_feed(payload: FeedGenerateRequest, request: Request):
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="AI service not configured")
-    _check_rate_limit(_client_ip(request))
+    _consume_quota(request, kind="feed")
 
     hint = ""
     if payload.winning_types:
@@ -395,53 +490,38 @@ async def ai_generate_feed(payload: FeedGenerateRequest, request: Request):
             f"types in your 7, while still keeping variety across all 5 types."
         )
 
-    prompt = (
+    system_msg = (
         "You are writing short, uplifting micro-content for a habit-tracking app called "
-        "\"Awesome Life\". Generate exactly 7 NEW and UNIQUE feed slides for today. Each "
-        "slide must be one of these types: conspiracy (whimsical reframe of setbacks), "
-        "reframe (positive perspective flip), affirmation (mindful encouragement), "
-        "quickwin (community-style win mention), cosmic (cosmic/universe themed motivation).\n\n"
-        "Return ONLY a valid JSON array (no markdown, no prose) with exactly 7 objects, each "
-        "with these fields:\n"
+        "\"Awesome Life\". Voice: gentle, witty, affirming. NEVER repeat evergreen seeded content."
+    )
+
+    user_prompt = (
+        "Generate exactly 7 NEW and UNIQUE feed slides for today as a JSON array. Each slide must "
+        "be one of: conspiracy (whimsical reframe of setbacks), reframe (positive perspective flip), "
+        "affirmation (mindful encouragement), quickwin (community-style win mention), cosmic "
+        "(cosmic/universe themed motivation).\n\n"
+        "Return ONLY a valid JSON array (no markdown, no prose) with exactly 7 objects, each with:\n"
         "- \"type\": one of \"conspiracy\" | \"reframe\" | \"affirmation\" | \"quickwin\" | \"cosmic\"\n"
-        "- \"category\": matching display label — \"Witty Conspiracy\" | \"Awesome Reframe\" | "
+        "- \"category\": matching label — \"Witty Conspiracy\" | \"Awesome Reframe\" | "
         "\"Bloom Moment\" | \"Quick Win Spotlight\" | \"Cosmic Teaser\"\n"
         "- \"visual\": one of \"lotus\" | \"daisy\" | \"circle\" | \"stats\" | \"cosmic\"\n"
-        "- \"text\": the main message, 1-2 sentences, warm and poetic, can include one emoji max\n"
+        "- \"text\": main message, 1-2 sentences warm and poetic, can include one emoji max\n"
         "- \"subtext\": short tag line, 2-5 words\n\n"
-        "Keep voice: gentle, witty, affirming. Mix the 5 types across the 7 slides. DO NOT "
-        f"repeat any of the already-seeded evergreen phrases.{hint}"
+        f"Mix the 5 types across 7 slides.{hint}"
     )
 
     try:
-        async with httpx.AsyncClient(timeout=45) as client_http:
-            resp = await client_http.post(
-                f"{GEMINI_BASE_URL}?key={api_key}",
-                json={
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {
-                        "temperature": 0.9, "topK": 40, "topP": 0.95,
-                        "maxOutputTokens": 2048,
-                        "responseMimeType": "application/json",
-                    },
-                },
-            )
-        data = resp.json()
-        if resp.status_code != 200 or data.get("error"):
-            msg = data.get("error", {}).get("message", f"Gemini error {resp.status_code}")
-            raise HTTPException(status_code=502, detail=msg)
-        raw = (
-            data.get("candidates", [{}])[0]
-            .get("content", {})
-            .get("parts", [{}])[0]
-            .get("text", "")
+        raw = await _emergent_chat(
+            system_message=system_msg,
+            user_text=user_prompt,
+            temperature=0.9,
+            max_tokens=2048,
+            json_mode=True,
         )
-        # Strip ```json fences if present
         cleaned = raw.replace("```json", "").replace("```", "").strip()
         try:
             items = json.loads(cleaned)
         except json.JSONDecodeError:
-            # Try to slice between first [ and last ]
             start, end = cleaned.find("["), cleaned.rfind("]")
             if start == -1 or end == -1:
                 raise HTTPException(status_code=502, detail="AI returned unparseable JSON")
@@ -456,7 +536,7 @@ async def ai_generate_feed(payload: FeedGenerateRequest, request: Request):
         raise HTTPException(status_code=500, detail=f"AI feed gen failed: {e}")
 
 
-# ----- AI Coach -----
+# ----- AI Coach (legacy — kept for compat, uses Emergent LLM) -----
 
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat_with_coach(chat_input: ChatMessage):
@@ -576,10 +656,9 @@ class AICoachRequest(BaseModel):
 
 @api_router.post("/ai-coach")
 async def ai_coach_chat(request: AICoachRequest):
-    gemini_key = os.environ.get('GEMINI_API_KEY')
+    """Legacy endpoint — kept for backward compatibility. New code uses /api/ai/chat."""
     emergent_key = os.environ.get('EMERGENT_LLM_KEY')
-
-    if not gemini_key and not emergent_key:
+    if not emergent_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
     habits_text = ', '.join(request.habits) if request.habits else 'none tracked yet'
@@ -593,34 +672,14 @@ async def ai_coach_chat(request: AICoachRequest):
     )
     session_id = request.session_id or str(uuid.uuid4())
 
-    # Prefer user's own Gemini key (free/cheap) over Emergent LLM key
-    if gemini_key:
-        try:
-            import httpx
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
-            payload = {
-                "contents": [{"parts": [{"text": f"{system_prompt}\n\nUser: {request.message}"}]}],
-                "generationConfig": {"temperature": 0.7, "topK": 40, "topP": 0.95, "maxOutputTokens": 1024}
-            }
-            async with httpx.AsyncClient(timeout=30) as client:
-                resp = await client.post(url, json=payload)
-            data = resp.json()
-            if resp.status_code == 200 and not data.get("error"):
-                text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                return {"response": text, "session_id": session_id}
-            logging.warning(f"Gemini key failed ({resp.status_code}), trying fallback")
-        except Exception as e:
-            logging.warning(f"Gemini direct call failed: {e}, trying fallback")
-
-    # Fallback: Emergent LLM Key
     try:
         chat = LlmChat(
             api_key=emergent_key,
             session_id=session_id,
-            system_message=system_prompt
-        ).with_model("gemini", "gemini-2.0-flash")
+            system_message=system_prompt,
+        ).with_model("gemini", "gemini-2.5-flash")
         response = await chat.send_message(UserMessage(text=request.message))
-        return {"response": response, "session_id": session_id}
+        return {"response": str(response) if response is not None else "", "session_id": session_id}
     except Exception as e:
         logging.error(f"AI Coach error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"AI Coach failed: {str(e)}")

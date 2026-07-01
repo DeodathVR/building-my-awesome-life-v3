@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useAuth } from '../context/AuthContext';
 import {
   fetchFeedPosts, createFeedPost, updateFeedPost, deleteFeedPost,
   fetchEducationTips, createEducationTip, updateEducationTip, deleteEducationTip,
@@ -232,6 +233,7 @@ function GamesTab() {
 }
 
 function FeedTab() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -307,7 +309,7 @@ function FeedTab() {
     if (generating) return;
     setGenerating(true);
     try {
-      const res = await generateDailyFeed({ source: 'admin', force: true });
+      const res = await generateDailyFeed({ source: 'admin', force: true, userId: user?.uid });
       if (res.skipped) toast.info('Already generated today — forced new batch anyway');
       toast.success(`Generated ${res.count} AI posts ✨`);
       await load();

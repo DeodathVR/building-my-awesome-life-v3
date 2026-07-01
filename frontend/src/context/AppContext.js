@@ -22,10 +22,13 @@ const AppContext = createContext();
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // XHR-based POST that bypasses PostHog's fetch wrapper
-const xhrPost = (url, body) => new Promise((resolve, reject) => {
+const xhrPost = (url, body, extraHeaders = {}) => new Promise((resolve, reject) => {
   const xhr = new XMLHttpRequest();
   xhr.open('POST', url);
   xhr.setRequestHeader('Content-Type', 'application/json');
+  for (const [k, v] of Object.entries(extraHeaders)) {
+    if (v != null) xhr.setRequestHeader(k, String(v));
+  }
   xhr.onload = () => {
     try { resolve({ status: xhr.status, ok: xhr.status >= 200 && xhr.status < 300, data: JSON.parse(xhr.responseText) }); }
     catch (e) { reject(new Error(`Parse error (${xhr.status})`)); }
@@ -503,7 +506,7 @@ Current user habits: ${habits.map(h => h.name).join(', ')}`;
       system_prompt: systemPrompt,
       temperature: 0.7,
       max_output_tokens: 1024,
-    });
+    }, { 'X-User-Id': user?.uid });
 
     if (!result.ok) {
       const err = result.data?.detail || `Request failed with status ${result.status}`;

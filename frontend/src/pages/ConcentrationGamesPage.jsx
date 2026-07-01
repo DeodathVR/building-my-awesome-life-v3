@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './games-page.css';
 
 const CONC_KEY = 'alu_concentration';
@@ -765,10 +766,13 @@ const AI_TIPS = [
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // XHR bypasses PostHog's fetch wrapper in production
-const xhrPost = (url, body) => new Promise((resolve, reject) => {
+const xhrPost = (url, body, extraHeaders = {}) => new Promise((resolve, reject) => {
   const xhr = new XMLHttpRequest();
   xhr.open('POST', url);
   xhr.setRequestHeader('Content-Type', 'application/json');
+  for (const [k, v] of Object.entries(extraHeaders)) {
+    if (v != null) xhr.setRequestHeader(k, String(v));
+  }
   xhr.onload = () => {
     try { resolve({ status: xhr.status, ok: xhr.status >= 200 && xhr.status < 300, data: JSON.parse(xhr.responseText) }); }
     catch (e) { reject(new Error('Parse error')); }
@@ -784,6 +788,7 @@ export default function ConcentrationGamesPage() {
   const [selCh, setSelCh] = useState(null);
   const [selGame, setSelGame] = useState(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { xp, level, pct } = getLvl();
   const isPro = IS_PRO();
   const recommended = CHALLENGES[2];
@@ -803,11 +808,11 @@ export default function ConcentrationGamesPage() {
         system_prompt: 'You are a focus and concentration coach for a gamified habit app. Answer concisely (2-3 sentences max).',
         temperature: 0.7,
         max_output_tokens: 256,
-      });
+      }, { 'X-User-Id': user?.uid });
       if (res.ok) {
         setCoachReply(res.data.response || 'Try again!');
       } else if (res.status === 429) {
-        setCoachReply('AI Coach is busy — please slow down a bit and try in a moment.');
+        setCoachReply(res.data?.detail || "You've hit today's AI limit — upgrade to Pro for unlimited, or come back tomorrow!");
       } else {
         setCoachReply('Could not reach AI Coach right now. Try again!');
       }
