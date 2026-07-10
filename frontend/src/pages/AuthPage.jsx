@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Target, Mail, Lock, User as UserIcon, LogIn, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
@@ -205,7 +205,10 @@ export default function AuthPage() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          By continuing you agree to our Terms & Privacy Policy.
+          By continuing you agree to our{' '}
+          <Link to="/terms" data-testid="auth-terms-link" className="text-primary underline">Terms</Link>
+          {' '}&amp;{' '}
+          <Link to="/privacy" data-testid="auth-privacy-link" className="text-primary underline">Privacy Policy</Link>.
         </p>
       </div>
     </div>

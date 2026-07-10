@@ -6,6 +6,8 @@ import { AppProvider } from "./context/AppContext";
 import { Toaster } from "./components/ui/sonner";
 import Navigation from "./components/Navigation";
 import VoiceCommandCenter from "./components/VoiceCommandCenter";
+import LegalFooter from "./components/LegalFooter";
+import CookieConsent from "./components/CookieConsent";
 import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from "./components/RouteGuards";
 import HomePage from "./pages/HomePage";
 import HabitsPage from "./pages/HabitsPage";
@@ -22,12 +24,15 @@ import HowToUsePage from "./pages/HowToUsePage";
 import PricingPage from "./pages/PricingPage";
 import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
 
 // Wraps everything that requires auth + per-user data
 const AuthedLayout = ({ children }) => (
   <AppProvider>
     <Navigation />
     <main className="pb-24 md:pb-0">{children}</main>
+    <LegalFooter />
     <VoiceCommandCenter />
   </AppProvider>
 );
@@ -37,6 +42,7 @@ const PublicLayout = ({ children }) => (
   <AppProvider>
     <Navigation />
     <main className="pb-24 md:pb-0">{children}</main>
+    <LegalFooter />
   </AppProvider>
 );
 
@@ -51,6 +57,8 @@ function App() {
             <Route path="/pricing" element={<PublicLayout><PricingPage /></PublicLayout>} />
             <Route path="/how-to-use" element={<PublicLayout><HowToUsePage /></PublicLayout>} />
             <Route path="/education" element={<PublicLayout><EducationPage /></PublicLayout>} />
+            <Route path="/privacy" element={<PublicLayout><PrivacyPolicyPage /></PublicLayout>} />
+            <Route path="/terms" element={<PublicLayout><TermsOfServicePage /></PublicLayout>} />
 
             {/* Protected — requires login */}
             <Route path="/" element={<ProtectedRoute><AuthedLayout><HomePage /></AuthedLayout></ProtectedRoute>} />
@@ -65,6 +73,7 @@ function App() {
             <Route path="/glow-up" element={<ProtectedRoute><AuthedLayout><GlowUpPage /></AuthedLayout></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><AuthedLayout><AdminPage /></AuthedLayout></AdminRoute>} />
           </Routes>
+          <CookieConsent />
         </BrowserRouter>
         <Toaster
           position="top-center"
