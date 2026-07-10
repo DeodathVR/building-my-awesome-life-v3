@@ -1,26 +1,42 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, Heart, Send, Trophy, Calendar, Target, Flame, MessageCircle } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { sanitiseUserText } from '../lib/sanitize';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 
 const CommunityPage = () => {
   const { communityPosts, challenges, createPost, likePost } = useApp();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [newPostContent, setNewPostContent] = useState('');
   const [isPosting, setIsPosting] = useState(false);
 
+  const requireAuthForAction = (actionLabel) => {
+    if (user) return true;
+    toast.info(`Sign up to ${actionLabel}`, {
+      description: '7-day free trial · cancel anytime',
+      action: { label: 'Sign up', onClick: () => navigate('/auth') },
+    });
+    return false;
+  };
+
   const handleSubmitPost = async () => {
-    if (!newPostContent.trim()) {
+    if (!requireAuthForAction('share with the community')) return;
+    const clean = sanitiseUserText(newPostContent);
+    if (!clean) {
       toast.error('Please write something to share');
       return;
     }
 
     setIsPosting(true);
     try {
-      await createPost(newPostContent.trim());
+      await createPost(clean);
       setNewPostContent('');
       toast.success('Post shared!', { description: 'Your update is now visible to the community' });
     } catch (err) {
@@ -30,6 +46,7 @@ const CommunityPage = () => {
   };
 
   const handleLike = async (postId) => {
+    if (!requireAuthForAction('like posts')) return;
     await likePost(postId);
   };
 

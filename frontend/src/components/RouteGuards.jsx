@@ -22,13 +22,13 @@ export const AdminRoute = ({ children }) => {
   const location = useLocation();
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/auth" state={{ from: location }} replace />;
-  if (!isAdmin) return <Navigate to="/" replace />;
+  if (!isAdmin) return <Navigate to="/dashboard" replace />;
   return children;
 };
 
 export const PublicOnlyRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen />;
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/dashboard" replace />;
   return children;
 };

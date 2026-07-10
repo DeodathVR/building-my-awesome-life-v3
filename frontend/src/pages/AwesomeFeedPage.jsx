@@ -115,6 +115,16 @@ const AwesomeFeedPage = () => {
   const containerRef = useRef(null);
   const touchStartY = useRef(0);
 
+  // Sign-up prompt for interactive actions when not logged in
+  const requireAuthForAction = (actionLabel) => {
+    if (user) return true;
+    toast.info(`Sign up to ${actionLabel}`, {
+      description: '7-day free trial · cancel anytime',
+      action: { label: 'Sign up', onClick: () => navigate('/auth') },
+    });
+    return false;
+  };
+
   const loadFeed = useCallback(async () => {
     try {
       const posts = await fetchFeedPosts({ activeOnly: true });
@@ -198,6 +208,7 @@ const AwesomeFeedPage = () => {
   };
 
   const handleSave = (itemId) => {
+    if (!requireAuthForAction('save posts to your journal')) return;
     setSavedItems(prev => {
       const next = new Set(prev);
       if (next.has(itemId)) {
@@ -214,6 +225,7 @@ const AwesomeFeedPage = () => {
   };
 
   const handleLike = (itemId) => {
+    if (!requireAuthForAction('like this post')) return;
     setLikedItems(prev => {
       if (prev.has(itemId)) return prev;
       const next = new Set(prev);
@@ -226,11 +238,13 @@ const AwesomeFeedPage = () => {
   };
 
   const handleShare = (itemId) => {
+    if (!requireAuthForAction('share to the community')) return;
     toast.success('Shared anonymously to community! 🌟');
     if (itemId) incrementPostEngagement(itemId, 'shares').catch(() => {});
   };
 
   const handleBloomSession = () => {
+    if (!requireAuthForAction('start a bloom session')) return;
     navigate('/focus');
     toast.info('Starting a bloom session...');
   };

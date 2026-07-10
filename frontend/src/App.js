@@ -1,7 +1,7 @@
 import React from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AppProvider } from "./context/AppContext";
 import { Toaster } from "./components/ui/sonner";
 import Navigation from "./components/Navigation";
@@ -26,6 +26,7 @@ import AdminPage from "./pages/AdminPage";
 import AuthPage from "./pages/AuthPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
+import LandingPage from "./pages/LandingPage";
 
 // Wraps everything that requires auth + per-user data
 const AuthedLayout = ({ children }) => (
@@ -46,6 +47,14 @@ const PublicLayout = ({ children }) => (
   </AppProvider>
 );
 
+// Root '/' — LandingPage for logged-out users, Dashboard redirect for logged-in
+const RootRoute = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (user) return <Navigate to="/dashboard" replace />;
+  return <PublicLayout><LandingPage /></PublicLayout>;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -53,24 +62,25 @@ function App() {
         <BrowserRouter>
           <Routes>
             {/* Public — logged-out users can browse */}
+            <Route path="/" element={<RootRoute />} />
             <Route path="/auth" element={<PublicOnlyRoute><AuthPage /></PublicOnlyRoute>} />
             <Route path="/pricing" element={<PublicLayout><PricingPage /></PublicLayout>} />
             <Route path="/how-to-use" element={<PublicLayout><HowToUsePage /></PublicLayout>} />
             <Route path="/education" element={<PublicLayout><EducationPage /></PublicLayout>} />
             <Route path="/privacy" element={<PublicLayout><PrivacyPolicyPage /></PublicLayout>} />
             <Route path="/terms" element={<PublicLayout><TermsOfServicePage /></PublicLayout>} />
+            <Route path="/feed" element={<PublicLayout><AwesomeFeedPage /></PublicLayout>} />
+            <Route path="/community" element={<PublicLayout><CommunityPage /></PublicLayout>} />
+            <Route path="/conspiracy" element={<PublicLayout><SuccessConspiracyPage /></PublicLayout>} />
+            <Route path="/concentration-games" element={<PublicLayout><ConcentrationGamesPage /></PublicLayout>} />
+            <Route path="/glow-up" element={<PublicLayout><GlowUpPage /></PublicLayout>} />
 
             {/* Protected — requires login */}
-            <Route path="/" element={<ProtectedRoute><AuthedLayout><HomePage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><AuthedLayout><HomePage /></AuthedLayout></ProtectedRoute>} />
             <Route path="/habits" element={<ProtectedRoute><AuthedLayout><HabitsPage /></AuthedLayout></ProtectedRoute>} />
             <Route path="/focus" element={<ProtectedRoute><AuthedLayout><Exercises /></AuthedLayout></ProtectedRoute>} />
             <Route path="/exercise/:exerciseId" element={<ProtectedRoute><AuthedLayout><ExercisePlayer /></AuthedLayout></ProtectedRoute>} />
-            <Route path="/feed" element={<ProtectedRoute><AuthedLayout><AwesomeFeedPage /></AuthedLayout></ProtectedRoute>} />
-            <Route path="/conspiracy" element={<ProtectedRoute><AuthedLayout><SuccessConspiracyPage /></AuthedLayout></ProtectedRoute>} />
-            <Route path="/community" element={<ProtectedRoute><AuthedLayout><CommunityPage /></AuthedLayout></ProtectedRoute>} />
             <Route path="/coach" element={<ProtectedRoute><AuthedLayout><AICoachPage /></AuthedLayout></ProtectedRoute>} />
-            <Route path="/concentration-games" element={<ProtectedRoute><AuthedLayout><ConcentrationGamesPage /></AuthedLayout></ProtectedRoute>} />
-            <Route path="/glow-up" element={<ProtectedRoute><AuthedLayout><GlowUpPage /></AuthedLayout></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><AuthedLayout><AdminPage /></AuthedLayout></AdminRoute>} />
           </Routes>
           <CookieConsent />

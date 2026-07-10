@@ -1,0 +1,43 @@
+{
+  "summary": "Tested the public/protected access refactor. Landing page, anonymous gates on Community/Feed actions, Success Conspiracy 2-use anon limit, Glow Up demo gallery, Concentration Games free-vs-pro gating, AI coach signup prompt, signup→/dashboard redirect, logged-in Glow Up upgrade CTA, community post sanitisation and Home nav pointing to /dashboard all work correctly. CRITICAL BUG: /feed page stays stuck on the 'Loading your feed…' spinner for anonymous visitors because Firestore rules require auth to read the feed_posts collection — this contradicts the stated requirement that Awesome Feed be public read-only.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AwesomeFeedPage (anonymous)",
+        "issue": "Feed never renders for anonymous visitors — indefinitely stuck on <div data-testid='awesome-feed-loading'>. Console shows repeated 'Load feed failed: FirebaseError: Missing or insufficient permissions.' The Firestore security rule for feed_posts still requires auth, but the review requirement is public read-only browsing. All feed-item / feed-like-button / feed-save-button / feed-share-button / feed-bloom-button testids are unreachable for anon users.",
+        "selector": "[data-testid='awesome-feed-page']",
+        "priority": "CRITICAL"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Anonymous Feed browse → signup gate",
+        "issue": "Because the feed never loads for anon users, the requireAuthForAction() gates on like/save/share/bloom cannot be exercised in the UI. Gate logic is present in code (verified in AwesomeFeedPage.jsx) but the surface is unreachable until Firestore rules for feed_posts allow public read (or the page swaps to a hard-coded/sample fallback for anon users).",
+        "affected_selectors": ["[data-testid='feed-like-button']","[data-testid='feed-save-button']","[data-testid='feed-share-button']","[data-testid='feed-bloom-button']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Make feed_posts publicly readable for anonymous visitors — either update /app/firestore.rules to allow read on feed_posts without auth (and manually publish in Firebase console) OR change AwesomeFeedPage to fall back to a curated sample feed for !user (mirroring GlowUpPage approach). Without this change, the Awesome Feed public-read requirement is not met.",
+    "(Optional) After users type a script tag in Community post, the visible output currently shows the inner text (e.g. '<script>alert(1)</script>hello' -> 'alert(1)hello'). React escaping + tag-stripping means it is XSS-safe, but if you want the script's inner text gone too, extend sanitiseUserText to drop content between <script>…</script> and <style>…</style> before stripping tags."
+  ],
+  "critical_code_review_comments": [
+    "sanitize.js correctly strips tags & neutralises dangerous URL schemes; combined with React's default JSX escaping this is XSS-safe. Consider also stripping script/style tag inner content.",
+    "ConcentrationGamesPage.selectGame() correctly redirects anonymous or non-Pro users to /pricing for non-free games. Free set (Number Flash, Math Sprint, Box Breathing, One Focus, Ten Rep) matches spec.",
+    "SuccessConspiracyPage anon counter shared between reframer + thought-flip (single localStorage key) — matches spec ('2 total across both').",
+    "AwesomeFeedPage does not gracefully degrade for unauthenticated Firestore reads — a fallback sample feed for !user would satisfy the public-read requirement even if rules stay strict.",
+    "RootRoute logic correct: anon → LandingPage, logged-in → /dashboard renders HomePage with data-testid='home-page'.",
+    "Navigation Home item href becomes /dashboard when logged in (confirmed via DOM inspection)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not requested)", "frontend": "90% (9/10 flows pass; feed anon read is the sole failure)"},
+  "test_credentials": "Created ephemeral Firebase user publictest{timestamp}@example.com / TestPass123! via /auth signup flow.",
+  "seed_data_creation": "One community post created by the logged-in test user containing sanitised '<script>alert(1)</script>hello sanitized xyz' — verified rendered as plain text with the <script> tags removed.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All acceptance criteria pass EXCEPT anonymous read of /feed. Once main agent either (a) publishes updated firestore.rules allowing public read on feed_posts, or (b) adds a sample-feed fallback when !user, re-run only the Feed anonymous section: expect awesome-feed-page to render, and clicking feed-like-button while logged out should surface the 'Sign up to like this post' sonner toast without persisting a like.",
+  "rca of the issue": "AwesomeFeedPage.jsx calls Firestore getDocs on the feed_posts collection at mount regardless of auth state. The security rules require request.auth != null for feed_posts reads (see /app/memory/test_credentials.md: 'feed_posts: global read (auth required)'). For anonymous visitors the promise rejects with 'Missing or insufficient permissions', the catch handler leaves loading=true, and the component keeps rendering the loading spinner. Fix path A: relax feed_posts read rule to 'allow read: if true;'. Fix path B: in AwesomeFeedPage, if (!user) return a static sample feed array instead of calling getDocs."
+}

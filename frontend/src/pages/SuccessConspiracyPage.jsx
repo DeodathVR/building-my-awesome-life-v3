@@ -5,8 +5,15 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { sanitiseUserText } from '../lib/sanitize';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+
+const ANON_AI_LIMIT = 2;
+const ANON_USAGE_KEY = 'alu_anon_conspiracy_uses';
+const readAnonUsage = () => parseInt(localStorage.getItem(ANON_USAGE_KEY) || '0', 10);
+const bumpAnonUsage = () => localStorage.setItem(ANON_USAGE_KEY, String(readAnonUsage() + 1));
 
 // Cosmic particles component
 const CosmicParticles = ({ density = 20 }) => (
@@ -96,6 +103,35 @@ const cardTypes = [
 const SuccessConspiracyPage = () => {
   const navigate = useNavigate();
   const { habits, stats, chatWithCoach } = useApp();
+  const { user } = useAuth();
+  const [anonUses, setAnonUses] = useState(readAnonUsage);
+
+  // Enforce anonymous AI usage cap (2 free reframes/flips, then signup required)
+  const canUseAI = () => {
+    if (user) return true;
+    if (anonUses >= ANON_AI_LIMIT) {
+      toast.info(`You've used your ${ANON_AI_LIMIT} free reframes`, {
+        description: 'Sign up for unlimited AI reframes + saved history',
+        action: { label: 'Sign up', onClick: () => navigate('/auth') },
+      });
+      return false;
+    }
+    return true;
+  };
+  const consumeAnonUse = () => {
+    if (user) return;
+    bumpAnonUsage();
+    setAnonUses(readAnonUsage());
+  };
+
+  const requireAuthForAction = (actionLabel) => {
+    if (user) return true;
+    toast.info(`Sign up to ${actionLabel}`, {
+      description: '7-day free trial · cancel anytime',
+      action: { label: 'Sign up', onClick: () => navigate('/auth') },
+    });
+    return false;
+  };
   
   // Local storage state
   const [conspiracies, setConspiracies] = useState(() => {
@@ -175,17 +211,20 @@ const SuccessConspiracyPage = () => {
   // Cosmic Reframer - AI chat (empathetic, centering-first)
   const handleReframe = async () => {
     if (!reframerInput.trim()) return;
+    if (!canUseAI()) return;
     setIsReframing(true);
     
     const streakInfo = stats?.max_streak > 0 ? ` They have a ${stats.max_streak}-day streak.` : '';
     const habitInfo = habits.length > 0 ? ` They're working on habits like ${habits.slice(0, 2).map(h => h.name).join(' and ')}.` : '';
     
     try {
+      const cleanInput = sanitiseUserText(reframerInput, { maxLen: 500 });
       const response = await chatWithCoach(
-        `As a gentle, wise companion using the Success Conspiracy perspective (the universe is conspiring FOR their success), first validate their feeling with empathy, then offer a grounded reframe. Be warm and supportive, never dismissive. Issue: "${reframerInput}"${streakInfo}${habitInfo} Format: Start with validation (1 sentence acknowledging how they feel), then the reframe (1-2 sentences). Keep it centering and calming. No marketing or sharing suggestions.`,
+        `As a gentle, wise companion using the Success Conspiracy perspective (the universe is conspiring FOR their success), first validate their feeling with empathy, then offer a grounded reframe. Be warm and supportive, never dismissive. Issue: "${cleanInput}"${streakInfo}${habitInfo} Format: Start with validation (1 sentence acknowledging how they feel), then the reframe (1-2 sentences). Keep it centering and calming. No marketing or sharing suggestions.`,
         null
       );
       setReframerResponse(response.response);
+      consumeAnonUse();
     } catch (err) {
       // Fallback response - empathetic first
       setReframerResponse(`That sounds really challenging, and it's okay to feel this way. What if this moment is the universe's way of creating space for something better? Take a breath—sometimes the pause before the breakthrough feels the heaviest. 🌸`);
@@ -196,6 +235,7 @@ const SuccessConspiracyPage = () => {
   // Thought Tracker - flip negative thoughts (empathetic approach)
   const handleFlipThought = async () => {
     if (!negativeThought.trim()) return;
+    if (!canUseAI()) return;
     setIsFlipping(true);
     
     // Check for keyword matches first
@@ -211,11 +251,13 @@ const SuccessConspiracyPage = () => {
     
     if (!flip) {
       try {
+        const cleanThought = sanitiseUserText(negativeThought, { maxLen: 500 });
         const response = await chatWithCoach(
-          `Transform this negative self-talk into a Success Conspiracy perspective (universe conspiring FOR them). First acknowledge the feeling is valid, then gently reframe. Be warm and grounded, never dismissive. Negative thought: "${negativeThought}". Reply with just the reframed thought (2 sentences max) with an emoji. No marketing or sharing suggestions.`,
+          `Transform this negative self-talk into a Success Conspiracy perspective (universe conspiring FOR them). First acknowledge the feeling is valid, then gently reframe. Be warm and grounded, never dismissive. Negative thought: "${cleanThought}". Reply with just the reframed thought (2 sentences max) with an emoji. No marketing or sharing suggestions.`,
           null
         );
         flip = response.response;
+        consumeAnonUse();
       } catch (err) {
         flip = "It's okay to feel this way—your feelings are valid. The universe might be using this moment to build something beautiful in you. Trust the process 🌱";
       }

@@ -800,6 +800,10 @@ export default function ConcentrationGamesPage() {
 
   const askCoach = async () => {
     if (!coachInput.trim() || coachLoading) return;
+    if (!user) {
+      setCoachReply("Sign up to chat with the AI Coach — it's free to try, unlimited on Pro.");
+      return;
+    }
     setCoachLoading(true);
     setCoachReply('');
     try {

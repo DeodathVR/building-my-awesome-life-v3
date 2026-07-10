@@ -6,21 +6,6 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
 
-const baseNavItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Home' },
-  { path: '/habits', icon: Target, label: 'Habits' },
-  { path: '/focus', icon: Focus, label: 'Focus' },
-  { path: '/concentration-games', icon: Gamepad2, label: 'Games' },
-  { path: '/glow-up', icon: Zap, label: 'Glow Up' },
-  { path: '/feed', icon: Sparkles, label: 'Feed' },
-  { path: '/conspiracy', icon: Wand2, label: 'Conspiracy' },
-  { path: '/education', icon: BookOpen, label: 'Learn' },
-  { path: '/community', icon: Users, label: 'Community' },
-  { path: '/coach', icon: MessageCircle, label: 'AI Coach' },
-  { path: '/pricing', icon: CreditCard, label: 'Pricing' },
-  { path: '/how-to-use', icon: HelpCircle, label: 'Guide' },
-];
-
 const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -29,9 +14,26 @@ const Navigation = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const navItems = isAdmin
-    ? [...baseNavItems, { path: '/admin', icon: ShieldCheck, label: 'Admin' }]
-    : baseNavItems;
+  const navItems = React.useMemo(() => {
+    const homeHref = user ? '/dashboard' : '/';
+    const items = [
+      { path: homeHref, icon: LayoutDashboard, label: 'Home' },
+      { path: '/habits', icon: Target, label: 'Habits', requiresAuth: true },
+      { path: '/focus', icon: Focus, label: 'Focus', requiresAuth: true },
+      { path: '/concentration-games', icon: Gamepad2, label: 'Games' },
+      { path: '/glow-up', icon: Zap, label: 'Glow Up' },
+      { path: '/feed', icon: Sparkles, label: 'Feed' },
+      { path: '/conspiracy', icon: Wand2, label: 'Conspiracy' },
+      { path: '/education', icon: BookOpen, label: 'Learn' },
+      { path: '/community', icon: Users, label: 'Community' },
+      { path: '/coach', icon: MessageCircle, label: 'AI Coach', requiresAuth: true },
+      { path: '/pricing', icon: CreditCard, label: 'Pricing' },
+      { path: '/how-to-use', icon: HelpCircle, label: 'Guide' },
+    ];
+    // Hide auth-only items for logged-out visitors to reduce dead clicks
+    const filtered = user ? items : items.filter(i => !i.requiresAuth);
+    return isAdmin ? [...filtered, { path: '/admin', icon: ShieldCheck, label: 'Admin' }] : filtered;
+  }, [user, isAdmin]);
 
   const handleSignOut = async () => {
     try {
@@ -222,20 +224,29 @@ const Navigation = () => {
         data-testid="mobile-bottom-navigation"
       >
         <div className="flex justify-around items-center">
-          {[navItems[0], navItems[1], navItems[3], navItems[4], navItems[9]].map(({ path, icon: Icon, label }) => (
-            <Link
-              key={path}
-              to={path}
-              data-testid={`bottom-nav-${label.toLowerCase().replace(/\s+/g, '-')}`}
-              className={`flex flex-col items-center p-2 rounded-full transition-all ${
-                location.pathname === path
-                  ? 'text-primary bg-primary/10'
-                  : 'text-muted-foreground'
-              }`}
-            >
-              <Icon className="w-5 h-5" strokeWidth={1.5} />
-            </Link>
-          ))}
+          {(() => {
+            // Pick 5 stable bottom-nav slots regardless of nav visibility state
+            const wantedPaths = user
+              ? ['/dashboard', '/habits', '/concentration-games', '/glow-up', '/coach']
+              : ['/', '/concentration-games', '/glow-up', '/feed', '/pricing'];
+            const bottom = wantedPaths
+              .map(p => navItems.find(n => n.path === p))
+              .filter(Boolean);
+            return bottom.map(({ path, icon: Icon, label }) => (
+              <Link
+                key={path}
+                to={path}
+                data-testid={`bottom-nav-${label.toLowerCase().replace(/\s+/g, '-')}`}
+                className={`flex flex-col items-center p-2 rounded-full transition-all ${
+                  location.pathname === path
+                    ? 'text-primary bg-primary/10'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                <Icon className="w-5 h-5" strokeWidth={1.5} />
+              </Link>
+            ));
+          })()}
         </div>
       </nav>
 
