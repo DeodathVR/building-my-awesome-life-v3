@@ -125,28 +125,50 @@ const AwesomeFeedPage = () => {
     return false;
   };
 
+  // Sample fallback feed for anonymous visitors before Firestore rules propagate.
+  // Also ensures the page always renders content even if the network dies mid-load.
+  const FALLBACK_FEED = React.useMemo(() => ([
+    { id: 'fb-1', type: 'quote', category: 'motivation', text: 'The secret of getting ahead is getting started.', source: 'evergreen', likes: 0, saves: 0, shares: 0 },
+    { id: 'fb-2', type: 'tip', category: 'habits', text: 'Stack a new habit onto an existing one. After my morning coffee, I will…', source: 'evergreen', likes: 0, saves: 0, shares: 0 },
+    { id: 'fb-3', type: 'mindfulness', category: 'focus', text: 'Take 3 slow breaths. Notice the space between them. That is where clarity lives.', source: 'evergreen', likes: 0, saves: 0, shares: 0 },
+    { id: 'fb-4', type: 'quote', category: 'growth', text: 'You do not rise to the level of your goals. You fall to the level of your systems.', source: 'evergreen', likes: 0, saves: 0, shares: 0 },
+    { id: 'fb-5', type: 'tip', category: 'wellness', text: 'A 2-minute stretch every hour resets your posture and your mood.', source: 'evergreen', likes: 0, saves: 0, shares: 0 },
+    { id: 'fb-6', type: 'affirmation', category: 'confidence', text: 'I am building something meaningful, one small choice at a time.', source: 'evergreen', likes: 0, saves: 0, shares: 0 },
+  ]), []);
+
   const loadFeed = useCallback(async () => {
     try {
       const posts = await fetchFeedPosts({ activeOnly: true });
-      setFeedItems(shuffle(posts));
+      if (posts && posts.length) {
+        setFeedItems(shuffle(posts));
+      } else {
+        setFeedItems(shuffle(FALLBACK_FEED));
+      }
       setCurrentIndex(0);
     } catch (e) {
-      console.error('Load feed failed:', e);
+      // Firestore permission errors (anonymous users before rules re-deploy)
+      // or transient network failures — fall back to evergreen sample feed.
+      console.warn('Load feed failed, using fallback:', e?.message);
+      setFeedItems(shuffle(FALLBACK_FEED));
+      setCurrentIndex(0);
     }
-  }, []);
+  }, [FALLBACK_FEED]);
 
   // Initial load + auto daily generation trigger
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoadingFeed(true);
-      // Ensure collections exist with evergreen seed
-      await seedContentIfEmpty();
+      // Seeding & daily generation are for logged-in users only (Firestore writes)
+      if (user) {
+        try { await seedContentIfEmpty(); } catch { /* ignore */ }
+      }
       await loadFeed();
       if (cancelled) return;
       setLoadingFeed(false);
 
-      // Fire-and-forget: daily generation if not yet done today
+      // Fire-and-forget: daily generation if not yet done today (auth only)
+      if (!user) return;
       try {
         const already = await hasGeneratedToday();
         if (!already) {
@@ -164,7 +186,7 @@ const AwesomeFeedPage = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [loadFeed, user?.uid]);
+  }, [loadFeed, user]);
 
   // Auto-animate visuals
   useEffect(() => {
