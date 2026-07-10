@@ -48,17 +48,8 @@ export default function HomePage() {
   const [filter, setFilter] = useState('all');
   const [concData, setConcData] = useState({});
   const [xp, setXp] = useState(0);
-  const [mandalaOpacity, setMandalaOpacity] = useState(() => {
-    const v = parseFloat(localStorage.getItem('alu_mandala_opacity'));
-    return isNaN(v) ? 0.14 : v;
-  });
   const isPro = localStorage.getItem('alu_isPro') === 'true';
   const quote = QUOTES[new Date().getDate() % QUOTES.length];
-
-  const setOpacity = (v) => {
-    setMandalaOpacity(v);
-    localStorage.setItem('alu_mandala_opacity', String(v));
-  };
 
   useEffect(() => {
     try {
@@ -94,61 +85,13 @@ export default function HomePage() {
 
   return (
     <div className="alu-s" data-testid="home-page">
-      {/* Mandala watermark — Centered Halo variant with adjustable opacity */}
+      {/* Mandala watermark — Centered Halo variant, 50% opacity */}
       <div
         className="mandala-watermark mandala-v1"
         aria-hidden="true"
-        data-testid="mandala-v1"
-        style={{ backgroundImage: `url(${mandalaWatermark})`, opacity: mandalaOpacity }}
+        data-testid="mandala-watermark"
+        style={{ backgroundImage: `url(${mandalaWatermark})` }}
       />
-
-      {/* Opacity tuner — remove after user locks in their preferred value */}
-      <div
-        data-testid="mandala-opacity-tuner"
-        style={{
-          position: 'fixed', top: 76, right: 16, zIndex: 50,
-          background: 'var(--card)', border: '1.5px solid var(--border)',
-          borderRadius: 16, padding: '12px 14px', boxShadow: 'var(--shadow-m)',
-          fontFamily: 'Manrope, sans-serif', width: 200,
-        }}
-      >
-        <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--muted-fg)', marginBottom: 8 }}>
-          Mandala opacity
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)' }}>
-            {Math.round(mandalaOpacity * 100)}%
-          </span>
-          <button
-            onClick={() => setOpacity(0.14)}
-            data-testid="mandala-opacity-reset"
-            style={{
-              fontSize: 10, fontWeight: 700, padding: '4px 8px', borderRadius: 8,
-              border: '1.5px solid var(--border)', background: 'var(--card)',
-              color: 'var(--muted-fg)', cursor: 'pointer',
-            }}
-          >
-            Reset
-          </button>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="0.5"
-          step="0.01"
-          value={mandalaOpacity}
-          onChange={(e) => setOpacity(parseFloat(e.target.value))}
-          data-testid="mandala-opacity-slider"
-          style={{ width: '100%', accentColor: 'var(--primary)' }}
-        />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--muted-fg)', marginTop: 4, fontWeight: 600 }}>
-          <span>Subtle</span>
-          <span>Bold</span>
-        </div>
-        <p style={{ fontSize: 10, color: 'var(--muted-fg)', marginTop: 10, lineHeight: 1.4 }}>
-          Drag to find your sweet spot, then tell me the % and I&apos;ll bake it in.
-        </p>
-      </div>
       <div className="orb" style={{ left: '-5%', top: '-5%', width: 420, height: 420, background: 'rgba(77,182,172,0.05)', filter: 'blur(130px)', animationDuration: '13s' }} />
       <div className="orb" style={{ left: '80%', top: '70%', width: 350, height: 350, background: 'rgba(255,213,79,0.04)', filter: 'blur(110px)', animationDuration: '17s', animationDelay: '2s' }} />
       <div className="grid-dot-bg" />
