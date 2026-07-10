@@ -270,6 +270,50 @@
 .alu-s .orb { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; animation: alu-orbFloat ease-in-out infinite; }
 .alu-s .grid-dot-bg { position: fixed; inset: 0; background-image: radial-gradient(rgba(77,182,172,0.05) 1px, transparent 1px); background-size: 38px 38px; pointer-events: none; z-index: 0; }
 
+/* Mandala watermark — customized signature for the home dashboard.
+   NOTE: backgroundImage is set inline in HomePage.jsx via a webpack-resolved import
+   so we don't hard-code a url() here (CRA css-loader would fail to resolve). */
+.alu-s .mandala-watermark {
+  position: fixed;
+  top: 50%;
+  right: -8%;
+  transform: translateY(-50%);
+  width: min(780px, 62vw);
+  height: auto;
+  aspect-ratio: 782 / 1170;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+  filter: saturate(1.15);
+  animation: alu-mandalaDrift 24s ease-in-out infinite;
+}
+.alu-s .mandala-watermark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 40%, var(--bg) 78%);
+  pointer-events: none;
+}
+@keyframes alu-mandalaDrift {
+  0%, 100% { transform: translateY(-50%) rotate(0deg) scale(1); }
+  50% { transform: translateY(-50%) rotate(3deg) scale(1.02); }
+}
+[data-theme='dark'] .alu-s .mandala-watermark,
+.dark .alu-s .mandala-watermark { opacity: 0.11; filter: saturate(1.35) brightness(1.1); }
+@media (max-width: 768px) {
+  .alu-s .mandala-watermark {
+    right: -30%;
+    width: 100vw;
+    opacity: 0.055;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .alu-s .mandala-watermark { animation: none; }
+}
+
 .alu-s .game-display {
   font-family: 'JetBrains Mono', monospace;
   font-size: 56px;

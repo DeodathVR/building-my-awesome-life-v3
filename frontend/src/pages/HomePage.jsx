@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import mandalaWatermark from '../assets/mandala-watermark.png';
 import './shared-pages.css';
 
 const QUOTES = [
@@ -84,8 +85,9 @@ export default function HomePage() {
 
   return (
     <div className="alu-s" data-testid="home-page">
-      <div className="orb" style={{ left: '-5%', top: '-5%', width: 420, height: 420, background: 'rgba(77,182,172,0.06)', filter: 'blur(130px)', animationDuration: '13s' }} />
-      <div className="orb" style={{ left: '80%', top: '70%', width: 350, height: 350, background: 'rgba(255,213,79,0.05)', filter: 'blur(110px)', animationDuration: '17s', animationDelay: '2s' }} />
+      <div className="mandala-watermark" aria-hidden="true" data-testid="mandala-watermark" style={{ backgroundImage: `url(${mandalaWatermark})` }} />
+      <div className="orb" style={{ left: '-5%', top: '-5%', width: 420, height: 420, background: 'rgba(77,182,172,0.05)', filter: 'blur(130px)', animationDuration: '13s' }} />
+      <div className="orb" style={{ left: '80%', top: '70%', width: 350, height: 350, background: 'rgba(255,213,79,0.04)', filter: 'blur(110px)', animationDuration: '17s', animationDelay: '2s' }} />
       <div className="grid-dot-bg" />
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 80px', position: 'relative', zIndex: 1 }}>
