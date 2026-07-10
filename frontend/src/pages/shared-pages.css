@@ -27,6 +27,31 @@
 .alu-s .fh { font-family: 'Playfair Display', serif; }
 .alu-s .mono { font-family: 'JetBrains Mono', monospace; }
 
+/* Dark-mode overrides — scoped to Home page only so other .alu-s pages stay untouched.
+   Palette matches index.css .dark tokens (hsl 200 18% 10-22%). */
+.dark .alu-s[data-testid="home-page"] {
+  --bg: #131b1f;
+  --card: #1c262b;
+  --fg: #f4f7fa;
+  --primary: #4DB6AC;
+  --primary-d: #26A69A;
+  --primary-l: #223b3a;
+  --accent: #FFD54F;
+  --accent-d: #FFA726;
+  --accent-fg: #3E2723;
+  --sage: #81C784;
+  --sage-d: #4CAF50;
+  --muted: #212e33;
+  --muted-fg: #93a3ab;
+  --border: #2c3a41;
+  --shadow-s: 0 4px 20px -2px rgba(0,0,0,0.35);
+  --shadow-m: 0 12px 32px -5px rgba(0,0,0,0.5);
+  --shadow-l: 0 24px 56px -10px rgba(0,0,0,0.6);
+}
+.dark .alu-s[data-testid="home-page"] .card {
+  border-color: rgba(255,255,255,0.06);
+}
+
 @keyframes alu-slideUp {
   from { opacity: 0; transform: translateY(22px); }
   to { opacity: 1; transform: translateY(0); }
