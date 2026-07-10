@@ -48,15 +48,16 @@ export default function HomePage() {
   const [filter, setFilter] = useState('all');
   const [concData, setConcData] = useState({});
   const [xp, setXp] = useState(0);
-  const [mandalaVariant, setMandalaVariant] = useState(
-    () => localStorage.getItem('alu_mandala_variant') || '1'
-  );
+  const [mandalaOpacity, setMandalaOpacity] = useState(() => {
+    const v = parseFloat(localStorage.getItem('alu_mandala_opacity'));
+    return isNaN(v) ? 0.14 : v;
+  });
   const isPro = localStorage.getItem('alu_isPro') === 'true';
   const quote = QUOTES[new Date().getDate() % QUOTES.length];
 
-  const chooseMandala = (v) => {
-    setMandalaVariant(v);
-    localStorage.setItem('alu_mandala_variant', v);
+  const setOpacity = (v) => {
+    setMandalaOpacity(v);
+    localStorage.setItem('alu_mandala_opacity', String(v));
   };
 
   useEffect(() => {
@@ -93,61 +94,60 @@ export default function HomePage() {
 
   return (
     <div className="alu-s" data-testid="home-page">
-      {/* Mandala watermark — variant driven by localStorage 'alu_mandala_variant' */}
-      {mandalaVariant === '1' && (
-        <div className="mandala-watermark mandala-v1" aria-hidden="true" data-testid="mandala-v1" style={{ backgroundImage: `url(${mandalaWatermark})` }} />
-      )}
-      {mandalaVariant === '2' && (
-        <div className="mandala-watermark mandala-v2" aria-hidden="true" data-testid="mandala-v2" style={{ backgroundImage: `url(${mandalaWatermark})` }} />
-      )}
-      {mandalaVariant === '3' && (
-        <div className="mandala-watermark mandala-v3" aria-hidden="true" data-testid="mandala-v3" style={{ backgroundImage: `url(${mandalaWatermark})` }} />
-      )}
-      {mandalaVariant === '4' && (
-        <>
-          <div className="mandala-watermark mandala-v4-a" aria-hidden="true" data-testid="mandala-v4-a" style={{ backgroundImage: `url(${mandalaWatermark})` }} />
-          <div className="mandala-watermark mandala-v4-b" aria-hidden="true" data-testid="mandala-v4-b" style={{ backgroundImage: `url(${mandalaWatermark})` }} />
-        </>
-      )}
-      {mandalaVariant === '0' && (
-        <div className="mandala-watermark mandala-v0" aria-hidden="true" data-testid="mandala-v0" style={{ backgroundImage: `url(${mandalaWatermark})` }} />
-      )}
-
-      {/* Preview switcher — remove after user picks their favorite */}
+      {/* Mandala watermark — Centered Halo variant with adjustable opacity */}
       <div
-        data-testid="mandala-switcher"
+        className="mandala-watermark mandala-v1"
+        aria-hidden="true"
+        data-testid="mandala-v1"
+        style={{ backgroundImage: `url(${mandalaWatermark})`, opacity: mandalaOpacity }}
+      />
+
+      {/* Opacity tuner — remove after user locks in their preferred value */}
+      <div
+        data-testid="mandala-opacity-tuner"
         style={{
           position: 'fixed', top: 76, right: 16, zIndex: 50,
           background: 'var(--card)', border: '1.5px solid var(--border)',
-          borderRadius: 16, padding: '10px 12px', boxShadow: 'var(--shadow-m)',
-          display: 'flex', flexDirection: 'column', gap: 6, fontFamily: 'Manrope, sans-serif',
-          maxWidth: 190,
+          borderRadius: 16, padding: '12px 14px', boxShadow: 'var(--shadow-m)',
+          fontFamily: 'Manrope, sans-serif', width: 200,
         }}
       >
-        <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--muted-fg)', marginBottom: 2 }}>Mandala preview</p>
-        {[
-          ['1', 'Centered Halo'],
-          ['2', 'Tiled Pattern'],
-          ['3', 'Full-Bleed Cover'],
-          ['4', 'Twin Anchors'],
-          ['0', 'Original (side)'],
-          ['off', 'Off'],
-        ].map(([id, label]) => (
+        <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--muted-fg)', marginBottom: 8 }}>
+          Mandala opacity
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)' }}>
+            {Math.round(mandalaOpacity * 100)}%
+          </span>
           <button
-            key={id}
-            onClick={() => chooseMandala(id)}
-            data-testid={`mandala-switch-${id}`}
+            onClick={() => setOpacity(0.14)}
+            data-testid="mandala-opacity-reset"
             style={{
-              padding: '6px 10px', borderRadius: 10,
-              border: `1.5px solid ${mandalaVariant === id ? 'var(--primary)' : 'var(--border)'}`,
-              background: mandalaVariant === id ? 'var(--primary)' : 'var(--card)',
-              color: mandalaVariant === id ? '#fff' : 'var(--fg)',
-              fontSize: 11, fontWeight: 700, cursor: 'pointer', textAlign: 'left', transition: '.15s',
+              fontSize: 10, fontWeight: 700, padding: '4px 8px', borderRadius: 8,
+              border: '1.5px solid var(--border)', background: 'var(--card)',
+              color: 'var(--muted-fg)', cursor: 'pointer',
             }}
           >
-            {label}
+            Reset
           </button>
-        ))}
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="0.5"
+          step="0.01"
+          value={mandalaOpacity}
+          onChange={(e) => setOpacity(parseFloat(e.target.value))}
+          data-testid="mandala-opacity-slider"
+          style={{ width: '100%', accentColor: 'var(--primary)' }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--muted-fg)', marginTop: 4, fontWeight: 600 }}>
+          <span>Subtle</span>
+          <span>Bold</span>
+        </div>
+        <p style={{ fontSize: 10, color: 'var(--muted-fg)', marginTop: 10, lineHeight: 1.4 }}>
+          Drag to find your sweet spot, then tell me the % and I&apos;ll bake it in.
+        </p>
       </div>
       <div className="orb" style={{ left: '-5%', top: '-5%', width: 420, height: 420, background: 'rgba(77,182,172,0.05)', filter: 'blur(130px)', animationDuration: '13s' }} />
       <div className="orb" style={{ left: '80%', top: '70%', width: 350, height: 350, background: 'rgba(255,213,79,0.04)', filter: 'blur(110px)', animationDuration: '17s', animationDelay: '2s' }} />
