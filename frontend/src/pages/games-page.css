@@ -163,7 +163,7 @@
 .dark .games-s .pill-ai { color: #C4B5FD; }
 .dark .games-s .pill-xp { color: #FF9E80; }
 
-/* Icon circle */
+/* Icon circle (legacy — emoji-based) */
 .games-s .ch-icon {
   width: 48px; height: 48px; border-radius: 14px;
   display: flex; align-items: center; justify-content: center;
@@ -173,13 +173,75 @@
   box-shadow: 0 0 12px color-mix(in srgb, var(--ch-color, var(--g-teal)) 30%, transparent);
 }
 
+/* Neon-glow icon (new) — used with lucide icons + gradient */
+.games-s .ch-icon-neon {
+  width: 52px; height: 52px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.games-s .ch-card:hover .ch-icon-neon {
+  transform: scale(1.06) rotate(-2deg);
+}
+
+/* Focus Visual — mandala hero card on the left column of Games home */
+.games-s .focus-visual {
+  position: relative;
+  border-radius: 22px;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1E293B, #312E81 60%, #1E293B);
+  box-shadow: 0 16px 48px rgba(15,23,42,0.35);
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+}
+.games-s .focus-visual-mandala {
+  position: absolute;
+  inset: -6%;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.85;
+  filter: saturate(1.4) brightness(1.05) drop-shadow(0 0 24px rgba(139,92,246,0.35));
+  animation: g-mandala-spin 80s linear infinite;
+  pointer-events: none;
+}
+.games-s .focus-visual-content {
+  position: relative; z-index: 1;
+  text-align: center;
+  padding: 20px;
+}
+.games-s .focus-timer {
+  font-size: clamp(56px, 6vw, 88px);
+  font-weight: 800;
+  color: #F8FAFC;
+  letter-spacing: 4px;
+  text-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 40px rgba(139,92,246,0.35);
+  line-height: 1;
+}
+.games-s .focus-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px; font-weight: 600;
+  color: #FFD54F;
+  margin-top: 12px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  letter-spacing: 0.5px;
+}
+@keyframes g-mandala-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .games-s .focus-visual-mandala { animation: none; }
+}
+
 /* AI Coach card */
 .games-s .coach-card {
-  background: linear-gradient(160deg, rgba(0,212,170,0.08), rgba(139,92,246,0.06));
-  border: 1px solid rgba(0,212,170,0.2);
+  background: linear-gradient(160deg, rgba(38,166,154,0.08), rgba(139,92,246,0.06));
+  border: 1px solid rgba(38,166,154,0.2);
   border-radius: 18px; padding: 20px;
   backdrop-filter: blur(20px);
-  position: sticky; top: 80px;
+}
+.dark .games-s .coach-card {
+  background: linear-gradient(160deg, rgba(0,212,170,0.08), rgba(139,92,246,0.06));
+  border-color: rgba(0,212,170,0.2);
 }
 .games-s .coach-icon {
   width: 52px; height: 52px; border-radius: 50%;
@@ -397,5 +459,5 @@
 
 @media (max-width: 900px) {
   .games-s .games-layout { grid-template-columns: 1fr !important; }
-  .games-s .coach-card { position: static !important; }
+  .games-s .focus-visual { aspect-ratio: 16 / 10; }
 }

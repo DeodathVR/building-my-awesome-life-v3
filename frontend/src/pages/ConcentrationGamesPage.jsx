@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Brain, Zap, Waves, Target, Dumbbell, Play } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSEO } from '../hooks/useSEO';
+import mandalaWatermark from '../assets/mandala-watermark.png';
 import './games-page.css';
 
 const CONC_KEY = 'alu_concentration';
@@ -712,7 +714,7 @@ function Result({ ok, xp, msg, onDone }) {
 
 const CHALLENGES = [
   {
-    id: 'memory', title: 'Memory Recall', icon: '🧠', color: '#FF7043',
+    id: 'memory', title: 'Memory Recall', Icon: Brain, color: '#EC4899', gradFrom: '#F472B6', gradTo: '#EC4899', glow: 'rgba(236,72,153,0.55)',
     desc: 'Train short-term memory with digits, quotes, and colour patterns.',
     games: [
       { id: 'number-flash', title: 'Number Flash', desc: 'Memorise 6 digits for 5 seconds, then recall them.', xp: 60, free: true, Component: NumberFlash },
@@ -721,7 +723,7 @@ const CHALLENGES = [
     ]
   },
   {
-    id: 'speed', title: 'Speed Focus', icon: '⚡', color: '#00D4AA',
+    id: 'speed', title: 'Speed Focus', Icon: Zap, color: '#22C55E', gradFrom: '#84CC16', gradTo: '#22C55E', glow: 'rgba(34,197,94,0.5)',
     desc: 'Sharpen processing speed with maths, word unscrambling, and reaction tests.',
     games: [
       { id: 'math-sprint', title: 'Math Sprint', desc: 'Solve 10 arithmetic problems as fast as possible.', xp: 55, free: true, Component: MathSprint },
@@ -730,7 +732,7 @@ const CHALLENGES = [
     ]
   },
   {
-    id: 'deep', title: 'Deep Work Sprint', icon: '🌊', color: '#8B5CF6',
+    id: 'deep', title: 'Deep Work Sprint', Icon: Waves, color: '#3B82F6', gradFrom: '#22D3EE', gradTo: '#3B82F6', glow: 'rgba(59,130,246,0.5)',
     desc: 'Build the ability to enter deep focus states through breathing and writing.',
     games: [
       { id: 'box-breathing', title: 'Box Breathing', desc: '4-4-4-4 breathing for 4 rounds to calm and focus.', xp: 60, free: true, Component: BoxBreathing },
@@ -739,7 +741,7 @@ const CHALLENGES = [
     ]
   },
   {
-    id: 'single', title: 'Single Tab Rule', icon: '🎯', color: '#4CAF50',
+    id: 'single', title: 'Single Tab Rule', Icon: Target, color: '#EF4444', gradFrom: '#F97316', gradTo: '#EF4444', glow: 'rgba(239,68,68,0.5)',
     desc: 'Train selective attention — follow, filter, and sequence.',
     games: [
       { id: 'one-focus', title: 'One Focus', desc: 'Follow a drifting dot and tap it 8 times in 45 seconds.', xp: 55, free: true, Component: OneFocus },
@@ -748,7 +750,7 @@ const CHALLENGES = [
     ]
   },
   {
-    id: 'workout', title: 'Micro Workout', icon: '💪', color: '#FFD54F',
+    id: 'workout', title: 'Micro Workout', Icon: Dumbbell, color: '#F59E0B', gradFrom: '#FBBF24', gradTo: '#F59E0B', glow: 'rgba(245,158,11,0.5)',
     desc: 'Quick physical resets that energise brain and body.',
     games: [
       { id: 'ten-rep', title: '10 Rep Challenge', desc: 'Choose an exercise and complete 10 mindful reps.', xp: 50, free: true, Component: TenRep },
@@ -848,33 +850,43 @@ export default function ConcentrationGamesPage() {
       <div className="g-orb" style={{ left: '40%', top: '80%', width: 300, height: 300, background: 'radial-gradient(circle, rgba(255,112,67,0.08), transparent)', filter: 'blur(50px)', animationDuration: '13s', animationDelay: '1s' }} />
       <div className="g-grid" />
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px 80px', position: 'relative', zIndex: 1 }}>
-
-        {/* Header */}
-        <section style={{ paddingTop: 44, paddingBottom: 28 }} className="au">
-          <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 4, color: 'var(--g-teal)', marginBottom: 8 }}>Focus Challenges</p>
-          <h1 className="fh" style={{ fontSize: 40, fontWeight: 700, marginBottom: 4 }}>Concentration <span style={{ background: 'linear-gradient(135deg, var(--g-teal), var(--g-gold))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Games</span></h1>
-          <p style={{ fontSize: 14, color: 'var(--g-muted)' }}>Train your focus. Earn XP. Level up.</p>
-        </section>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px 80px', position: 'relative', zIndex: 1 }}>
 
         {screen === 'home' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20, alignItems: 'start' }} className="games-layout">
-            <div>
-              {/* AI Insight Banner */}
-              <div className="ai-banner au" style={{ marginBottom: 18, animationDelay: '.05s' }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(139,92,246,0.25)', border: '1px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>🧠</div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 3, color: 'var(--g-purple)', marginBottom: 4 }}>AI Insight</p>
-                  <p style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.6 }}>Based on your focus patterns, we recommend <strong style={{ color: 'var(--g-teal)' }}>Deep Work Sprint</strong> first today · <span style={{ color: '#FF9E80' }}>87% success predicted</span></p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28, alignItems: 'start', paddingTop: 44 }} className="games-layout">
+
+            {/* ─── LEFT COLUMN ─── */}
+            <div className="au">
+              {/* Header (moved inside left col) */}
+              <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 4, color: 'var(--g-teal)', marginBottom: 8, textAlign: 'center' }}>Focus Challenges</p>
+              <h1 className="fh" style={{ fontSize: 40, fontWeight: 700, marginBottom: 4, textAlign: 'center' }}>Concentration <span style={{ background: 'linear-gradient(135deg, var(--g-teal), var(--g-gold))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Games</span></h1>
+              <p style={{ fontSize: 14, color: 'var(--g-muted)', textAlign: 'center', marginBottom: 22 }}>Train your focus. Earn XP. Level up.</p>
+
+              {/* Focus Visual — Mandala + Timer */}
+              <div className="focus-visual au" data-testid="focus-visual" style={{ animationDelay: '.05s' }}>
+                <div className="focus-visual-mandala" style={{ backgroundImage: `url(${mandalaWatermark})` }} aria-hidden="true" />
+                <div className="focus-visual-content">
+                  <div className="focus-timer mono">25:00</div>
+                  <p className="focus-label">Deep Work Sprint</p>
                 </div>
-                <div style={{ fontSize: 22, color: 'var(--g-teal)', flexShrink: 0 }}>↗</div>
               </div>
 
-              {/* XP Level bar */}
-              <div className="level-bar au" style={{ marginBottom: 20, animationDelay: '.1s' }}>
+              {/* AI Insight Banner */}
+              <div className="ai-banner au" style={{ marginTop: 16, animationDelay: '.1s' }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(139,92,246,0.25)', border: '1px solid rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Brain className="w-5 h-5" style={{ color: '#A78BFA' }} strokeWidth={1.75} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 3, color: 'var(--g-purple)', marginBottom: 4 }}>AI Insight</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.6 }}>Based on your focus patterns, we recommend <strong style={{ color: 'var(--g-teal)' }}>Deep Work Sprint</strong> first today · <span style={{ color: '#F97316' }}>87% success predicted</span></p>
+                </div>
+              </div>
+
+              {/* Level bar */}
+              <div className="level-bar au" style={{ marginTop: 12, animationDelay: '.15s' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ padding: '3px 10px', borderRadius: 99, background: 'rgba(0,212,170,0.18)', border: '1px solid rgba(0,212,170,0.3)', fontSize: 12, fontWeight: 800, color: 'var(--g-teal)' }}>L{level}</div>
+                    <div style={{ padding: '3px 10px', borderRadius: 99, background: 'rgba(38,166,154,0.15)', border: '1px solid rgba(38,166,154,0.3)', fontSize: 12, fontWeight: 800, color: 'var(--g-teal)' }}>L{level}</div>
                     <span style={{ fontSize: 14, fontWeight: 700 }}>Level {level}</span>
                   </div>
                   <span className="mono" style={{ fontSize: 14, fontWeight: 800, color: 'var(--g-gold)' }}>{xp} XP</span>
@@ -882,19 +894,30 @@ export default function ConcentrationGamesPage() {
                 <div className="xp-bar-track"><div className="xp-bar-fill" style={{ width: `${pct}%` }} /></div>
                 <p style={{ fontSize: 11, color: 'var(--g-muted2)', marginTop: 6 }}>{500 - (xp % 500)} XP to Level {level + 1}</p>
               </div>
+            </div>
 
-              {/* Challenges */}
-              <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 3, color: 'var(--g-muted2)', marginBottom: 12 }}>Today's Challenges</p>
+            {/* ─── RIGHT COLUMN ─── */}
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 3, color: 'var(--g-muted2)', marginBottom: 12, paddingTop: 6 }}>Today's Challenges</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {CHALLENGES.map((ch, i) => {
                   const freeCount = ch.games.filter(g => g.free).length;
                   const proCount = ch.games.filter(g => !g.free).length;
                   const totalXp = ch.games.reduce((s, g) => s + g.xp, 0);
                   const isRec = ch.id === recommended.id;
+                  const CardIcon = ch.Icon;
                   return (
                     <div key={ch.id} className={`ch-card au${isRec ? ' featured' : ''}`} style={{ '--ch-color': ch.color, animationDelay: `${i * .07}s` }} onClick={() => { setSelCh(ch); setScreen('challenge'); }} data-testid={`challenge-${ch.id}`}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div className="ch-icon" style={{ '--ch-color': ch.color }}>{ch.icon}</div>
+                        <div
+                          className="ch-icon-neon"
+                          style={{
+                            background: `linear-gradient(135deg, ${ch.gradFrom}, ${ch.gradTo})`,
+                            boxShadow: `0 8px 24px ${ch.glow}, 0 0 0 1px rgba(255,255,255,0.15) inset`,
+                          }}
+                        >
+                          <CardIcon className="w-6 h-6" style={{ color: '#FFFFFF' }} strokeWidth={2} />
+                        </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
                             {isRec && <span className="pill pill-ai">AI Recommended</span>}
@@ -906,7 +929,7 @@ export default function ConcentrationGamesPage() {
                           <p style={{ fontSize: 12, color: 'var(--g-muted)' }}>{ch.games.length} games · tap to choose</p>
                         </div>
                         {/* Mini sparkline */}
-                        <svg width="60" height="24" style={{ flexShrink: 0, opacity: 0.6 }}>
+                        <svg width="60" height="24" style={{ flexShrink: 0, opacity: 0.65 }}>
                           <polyline points="0,20 15,14 30,16 45,8 60,12" fill="none" stroke={ch.color} strokeWidth="1.5" strokeLinecap="round" />
                         </svg>
                       </div>
@@ -914,33 +937,33 @@ export default function ConcentrationGamesPage() {
                   );
                 })}
               </div>
-            </div>
 
-            {/* AI Coach sidebar */}
-            <div className="au" style={{ animationDelay: '.15s' }}>
-              <div className="coach-card">
-                <div className="coach-icon">🤖</div>
-                <h3 className="fh" style={{ fontSize: 16, fontWeight: 700, textAlign: 'center', marginBottom: 14 }}>AI Coach</h3>
-                {!coachReply && !coachLoading && AI_TIPS.map((t, i) => <p key={i} className="coach-tip">{t}</p>)}
-                {coachLoading && <p className="coach-tip" style={{ fontStyle: 'italic', opacity: 0.8 }} data-testid="games-coach-loading">Thinking…</p>}
-                {coachReply && (
-                  <p className="coach-tip" style={{ background: 'rgba(0,212,170,0.08)', borderColor: 'rgba(0,212,170,0.3)', whiteSpace: 'pre-wrap' }} data-testid="games-coach-reply">{coachReply}</p>
-                )}
-                <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                  <input
-                    className="coach-input"
-                    placeholder="Ask AI Coach…"
-                    value={coachInput}
-                    onChange={(e) => setCoachInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') askCoach(); }}
-                    disabled={coachLoading}
-                    data-testid="games-coach-input"
-                  />
-                  <button className="coach-send" onClick={askCoach} disabled={coachLoading || !coachInput.trim()} data-testid="games-coach-send-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A0E1A" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
-                  </button>
+              {/* AI Coach card (moved below challenges) */}
+              <div className="au" style={{ animationDelay: '.4s', marginTop: 16 }}>
+                <div className="coach-card">
+                  <div className="coach-icon">🤖</div>
+                  <h3 className="fh" style={{ fontSize: 20, fontWeight: 700, textAlign: 'center', marginBottom: 14 }}>AI Coach</h3>
+                  {!coachReply && !coachLoading && AI_TIPS.map((t, i) => <p key={i} className="coach-tip">{t}</p>)}
+                  {coachLoading && <p className="coach-tip" style={{ fontStyle: 'italic', opacity: 0.8 }} data-testid="games-coach-loading">Thinking…</p>}
+                  {coachReply && (
+                    <p className="coach-tip" style={{ background: 'rgba(38,166,154,0.08)', borderColor: 'rgba(38,166,154,0.3)', whiteSpace: 'pre-wrap' }} data-testid="games-coach-reply">{coachReply}</p>
+                  )}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                    <input
+                      className="coach-input"
+                      placeholder="Ask AI Coach…"
+                      value={coachInput}
+                      onChange={(e) => setCoachInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') askCoach(); }}
+                      disabled={coachLoading}
+                      data-testid="games-coach-input"
+                    />
+                    <button className="coach-send" onClick={askCoach} disabled={coachLoading || !coachInput.trim()} data-testid="games-coach-send-btn">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                    </button>
+                  </div>
+                  <p style={{ fontSize: 10, color: 'var(--g-muted2)', textAlign: 'center', marginTop: 8 }}>Powered by Gemini AI</p>
                 </div>
-                <p style={{ fontSize: 10, color: 'var(--g-muted2)', textAlign: 'center', marginTop: 8 }}>Powered by Gemini AI</p>
               </div>
             </div>
           </div>
@@ -950,7 +973,16 @@ export default function ConcentrationGamesPage() {
           <div className="au">
             <button className="back-btn" onClick={back} style={{ marginBottom: 24 }}>← Back to challenges</button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
-              <div className="ch-icon" style={{ '--ch-color': selCh.color, width: 56, height: 56, borderRadius: 18, fontSize: 26 }}>{selCh.icon}</div>
+              <div
+                className="ch-icon-neon"
+                style={{
+                  width: 56, height: 56, borderRadius: 18,
+                  background: `linear-gradient(135deg, ${selCh.gradFrom}, ${selCh.gradTo})`,
+                  boxShadow: `0 8px 24px ${selCh.glow}, 0 0 0 1px rgba(255,255,255,0.15) inset`,
+                }}
+              >
+                {selCh.Icon && <selCh.Icon className="w-7 h-7" style={{ color: '#FFFFFF' }} strokeWidth={2} />}
+              </div>
               <div>
                 <h2 className="fh" style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>{selCh.title}</h2>
                 <p style={{ fontSize: 13, color: 'var(--g-muted)' }}>{selCh.desc}</p>
