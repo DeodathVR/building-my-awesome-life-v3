@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Target, Gamepad2, Wand2, BookOpen, MessageCircle, Users, Zap, ArrowRight, CheckCircle2, Shield } from 'lucide-react';
 import mandalaWatermark from '../assets/mandala-watermark.png';
+import { useSEO } from '../hooks/useSEO';
 import './shared-pages.css';
 
 const FEATURES = [
@@ -22,6 +23,11 @@ const TESTIMONIALS = [
 ];
 
 export default function LandingPage() {
+  useSEO({
+    title: 'Habits, focus & mindful growth',
+    description: 'A minimalist web app that helps you build daily habits, sharpen focus with concentration mini-games, reframe negative thoughts, and see your best self — powered by mindfulness and AI. 7-day free trial.',
+    path: '/',
+  });
   return (
     <div className="alu-s" data-testid="landing-page">
       {/* Mandala hero backdrop */}

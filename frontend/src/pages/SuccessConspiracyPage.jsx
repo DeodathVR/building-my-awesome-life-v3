@@ -7,6 +7,7 @@ import { Textarea } from '../components/ui/textarea';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { sanitiseUserText } from '../lib/sanitize';
+import { useSEO } from '../hooks/useSEO';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -101,6 +102,11 @@ const cardTypes = [
 ];
 
 const SuccessConspiracyPage = () => {
+  useSEO({
+    title: 'Success Conspiracy — Cosmic Reframer & Thought Tracker',
+    description: 'Reframe negative thoughts through a supportive cosmic lens. Turn "I can\'t" into "I\'m becoming" with our AI-powered Cosmic Reframer and Thought Tracker.',
+    path: '/conspiracy',
+  });
   const navigate = useNavigate();
   const { habits, stats, chatWithCoach } = useApp();
   const { user } = useAuth();

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSEO } from '../hooks/useSEO';
 import './games-page.css';
 
 const CONC_KEY = 'alu_concentration';
@@ -784,6 +785,11 @@ const xhrPost = (url, body, extraHeaders = {}) => new Promise((resolve, reject) 
 // ─── Main Page ───────────────────────────────────────────
 
 export default function ConcentrationGamesPage() {
+  useSEO({
+    title: 'Concentration Games — 15 focus mini-games',
+    description: 'Sharpen your focus with 15 fun mini-games: memory, speed, deep-work, and single-tasking challenges. Play 5 free — upgrade to Pro for the full arsenal.',
+    path: '/concentration-games',
+  });
   const [screen, setScreen] = useState('home');
   const [selCh, setSelCh] = useState(null);
   const [selGame, setSelGame] = useState(null);

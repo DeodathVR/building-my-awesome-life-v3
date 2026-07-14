@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useSEO } from '../hooks/useSEO';
 import './shared-pages.css';
 
 const STEPS = [
@@ -91,6 +92,11 @@ const FAQItem = ({ q, a }) => {
 };
 
 export default function HowToUsePage() {
+  useSEO({
+    title: 'How to Use — Your first week',
+    description: 'A quick step-by-step guide to Awesome Life Habits. Set up your first habit, try a focus game, reframe a thought, and build your streak in under 10 minutes.',
+    path: '/how-to-use',
+  });
   const [done, setDone] = useState({});
   const [activeTab, setActiveTab] = useState('habits');
 

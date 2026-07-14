@@ -2,12 +2,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FileText } from 'lucide-react';
+import { useSEO } from '../hooks/useSEO';
 
 const SITE_NAME = 'Building My Awesome Life Daily';
 const CONTACT_EMAIL = 'sparksofmotivation1001@gmail.com';
 const EFFECTIVE_DATE = 'February 10, 2026';
 
 export default function TermsOfServicePage() {
+  useSEO({
+    title: 'Terms of Service',
+    description: 'The rules of the road for using Building My Awesome Life Daily. Subscription terms, refund policy, acceptable use, and governing law.',
+    path: '/terms',
+  });
   return (
     <div className="min-h-screen bg-background text-foreground" data-testid="terms-page">
       <div className="max-w-3xl mx-auto px-6 py-16">

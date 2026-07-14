@@ -2,10 +2,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSEO } from '../hooks/useSEO';
 import './shared-pages.css';
 
-// Curated demo pairs — sourced from royalty-free wellness photography (Unsplash).
-// Before/After framing conveys the *idea* of Glow Up without generating real AI images.
 const DEMOS = [
   {
     id: 'fit',
@@ -46,6 +45,11 @@ const DEMOS = [
 ];
 
 export default function GlowUpPage() {
+  useSEO({
+    title: 'Glow Up — AI Transformation Gallery',
+    description: 'See AI-imagined visions of your best self across four wellness goals: fitness, calm, glow, and focus. Curated before-and-after previews.',
+    path: '/glow-up',
+  });
   const { user } = useAuth();
   const [active, setActive] = useState(0);
   const demo = DEMOS[active];

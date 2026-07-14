@@ -2,12 +2,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
+import { useSEO } from '../hooks/useSEO';
 
 const SITE_NAME = 'Building My Awesome Life Daily';
 const CONTACT_EMAIL = 'sparksofmotivation1001@gmail.com';
 const EFFECTIVE_DATE = 'February 10, 2026';
 
 export default function PrivacyPolicyPage() {
+  useSEO({
+    title: 'Privacy Policy',
+    description: 'How Building My Awesome Life Daily collects, uses, and protects your data. GDPR-friendly. No selling of data. Contact us any time.',
+    path: '/privacy',
+  });
   return (
     <div className="min-h-screen bg-background text-foreground" data-testid="privacy-page">
       <div className="max-w-3xl mx-auto px-6 py-16">

@@ -1,0 +1,28 @@
+# robots.txt — Building My Awesome Life Daily
+# https://buildingmyawesomelifedaily.com
+
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /how-to-use
+Allow: /education
+Allow: /feed
+Allow: /community
+Allow: /conspiracy
+Allow: /concentration-games
+Allow: /glow-up
+Allow: /privacy
+Allow: /terms
+
+# Auth-gated user pages — not useful to crawl
+Disallow: /dashboard
+Disallow: /habits
+Disallow: /focus
+Disallow: /exercise
+Disallow: /coach
+Disallow: /admin
+
+# Well-behaved crawlers
+Crawl-delay: 1
+
+Sitemap: https://buildingmyawesomelifedaily.com/sitemap.xml

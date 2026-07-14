@@ -7,10 +7,16 @@ import { Textarea } from '../components/ui/textarea';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { sanitiseUserText } from '../lib/sanitize';
+import { useSEO } from '../hooks/useSEO';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 
 const CommunityPage = () => {
+  useSEO({
+    title: 'Community — Anonymous wins, challenges & encouragement',
+    description: 'Browse anonymous wins, join monthly challenges, and cheer on fellow habit-builders. A supportive, judgment-free corner of the internet.',
+    path: '/community',
+  });
   const { communityPosts, challenges, createPost, likePost } = useApp();
   const { user } = useAuth();
   const navigate = useNavigate();

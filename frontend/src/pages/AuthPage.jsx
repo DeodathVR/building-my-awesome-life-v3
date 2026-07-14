@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useSEO } from '../hooks/useSEO';
 import { Target, Mail, Lock, User as UserIcon, LogIn, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +15,12 @@ const GoogleIcon = () => (
 );
 
 export default function AuthPage() {
+  useSEO({
+    title: 'Sign in / Create account',
+    description: 'Sign in or create your Awesome Life Habits account. 7-day free trial, cancel anytime.',
+    path: '/auth',
+    noindex: true,
+  });
   const [mode, setMode] = useState('signin'); // signin | signup | forgot
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

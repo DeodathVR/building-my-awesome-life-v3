@@ -5,6 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '..
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { fetchEducationTips, seedContentIfEmpty } from '../services/contentService';
+import { useSEO } from '../hooks/useSEO';
 
 // Map string icon names (stored in Firestore) to lucide components
 const ICON_MAP = { Target, Layers, Lightbulb, Clock, Zap, BookOpen };
@@ -42,6 +43,11 @@ const educationalVideos = [
 ];
 
 const EducationPage = () => {
+  useSEO({
+    title: 'Learn — Habit & focus science',
+    description: 'Bite-size research-backed lessons on habit stacking, deep work, focus techniques, and the psychology of change. Free to read, updated regularly.',
+    path: '/education',
+  });
   const [playingVideo, setPlayingVideo] = React.useState(null);
   const [habitTips, setHabitTips] = useState(habitTipsFallback);
   const [focusExplanations, setFocusExplanations] = useState(focusExplanationsFallback);

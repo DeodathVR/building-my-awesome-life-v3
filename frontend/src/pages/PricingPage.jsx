@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useSEO } from '../hooks/useSEO';
 import './shared-pages.css';
 
 const PRO_KEY = 'alu_isPro';
@@ -149,6 +150,11 @@ const PricingCard = ({ tier, annual, onSelect, proActive, idx }) => {
 };
 
 export default function PricingPage() {
+  useSEO({
+    title: 'Pricing — Free forever · Pro $9.99 · Family $19.99',
+    description: 'Simple pricing. Track habits free forever. Pro unlocks 15 focus games, AI Coach, and Glow Up. Family covers 5 accounts. 7-day free trial. Cancel anytime.',
+    path: '/pricing',
+  });
   const [annual, setAnnual] = useState(false);
   const [proActive, setProActive] = useState(() => localStorage.getItem(PRO_KEY) === 'true');
   const [toast, setToast] = useState(null);

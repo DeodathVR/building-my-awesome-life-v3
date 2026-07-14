@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { fetchFeedPosts, generateDailyFeed, hasGeneratedToday, seedContentIfEmpty, incrementPostEngagement } from '../services/contentService';
 import { useAuth } from '../context/AuthContext';
+import { useSEO } from '../hooks/useSEO';
 
 // LocalStorage keys to remember per-user actions (prevents double-counting)
 const LIKED_KEY = 'alu_feed_liked';
@@ -101,6 +102,11 @@ const CosmicParticles = () => (
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
 const AwesomeFeedPage = () => {
+  useSEO({
+    title: 'Awesome Feed — Daily motivation, mindfulness & habit tips',
+    description: 'A daily AI-generated feed of motivational quotes, habit-stacking tips, mindfulness prompts and micro-lessons. Swipe through, save the best, and grow every day.',
+    path: '/feed',
+  });
   const navigate = useNavigate();
   const { habits, stats } = useApp();
   const { user } = useAuth();
