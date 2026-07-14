@@ -1,0 +1,26 @@
+{
+  "summary": "Frontend-only regression testing of the redesigned CandleFlame exercise. All acceptance criteria pass: candle-scene, candle-svg, candle-mandala-backdrop (src includes 'candle-mandala', naturalWidth 495 → asset loaded), and exactly 16 candle-spark elements render. Timer starts at 5:00, counts down after Play (verified 4:57 after 3.5s), reset returns to 5:00. Flame group computed animationName is 'none' before Play and 'candle-flame-flicker' after Play — animation gating on isPlaying prop works. No page errors on candle scene or on the 3 sibling exercises (flower-observation, expanding-circle, breath-counter). All 4 Focus cards render on /focus and clicking Start on Candle Flame navigates to the player.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/exercise/candle-flame", "issues": ["Mandala backdrop is quite subtle in light mode / at 1920x1080 (opacity 0.55 + screen blend on a dark radial background). Reference image showed a more prominent geometric mandala. Consider bumping opacity or brightness if the intent was stronger visual presence. Not a bug — visual polish only."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "CandleFlame.jsx is a self-contained all-SVG component with @keyframes injected via a <style> tag inside JSX — fine here, but if this exercise is ever mounted twice concurrently the duplicate <style> would still be idempotent by browser dedup. No action needed.",
+    "prefers-reduced-motion rule inside the injected <style> uses `.candle-scene *, .candle-scene g` to disable all animations — good accessibility touch.",
+    "Sparks memoized with useMemo and no deps — deterministic per mount which is correct (avoids reshuffling on re-render)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only)", "frontend": "100%"},
+  "test_credentials": "Fresh signup used: candletest{timestamp}@example.com / TestPass123! via /auth → Create an account. Firebase email/password signup works and lands on /dashboard.",
+  "seed_data_creation": "One throwaway Firebase auth user created per run (candletest1784066686@example.com).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "CandleFlame redesign is fully functional: mandala image bundled at /static/media/candle-mandala.*.png (495x410), 16 sparks, animated flame group keyed to isPlaying. ExercisePlayer wrapper untouched and works for all 4 exercises. Only observation: mandala backdrop visibility is subtle in light-mode app theme — design decision to defer to main agent. Firestore emits an offline-mode console warning in the preview env; unrelated to this change.",
+  "rca of the issue": "No issues found."
+}
