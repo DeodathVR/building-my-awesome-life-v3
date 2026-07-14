@@ -27,6 +27,27 @@ service cloud.firestore {
                .hasOnly(['likes', 'saves', 'shares']);
     }
 
+    // Enforces: (a) only one counter changes at a time (b) delta is exactly +1
+    // so a signed-in user can register a single like/save/share, not spike counters.
+    function isCounterIncrement(field) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([field]) &&
+             request.resource.data[field] is int &&
+             request.resource.data[field] == (resource.data[field] + 1);
+    }
+
+    function validEngagementIncrement() {
+      return isCounterIncrement('likes') ||
+             isCounterIncrement('saves') ||
+             isCounterIncrement('shares');
+    }
+
+    function validCommunityContent() {
+      return 'content' in request.resource.data &&
+             request.resource.data.content is string &&
+             request.resource.data.content.size() > 0 &&
+             request.resource.data.content.size() <= 1000;
+    }
+
     // habits - per-user (only owner can read/write own habits)
     match /habits/{habitId} {
       allow read: if isAdmin() || isOwnerOf(resource.data);
@@ -42,13 +63,13 @@ service cloud.firestore {
     }
 
     // feed_posts - PUBLIC read (public Awesome Feed for SEO + logged-out visitors)
-    // Admin: full CRUD. Signed-in users: only update engagement counters (like/save/share).
+    // Admin: full CRUD. Signed-in users: only increment engagement counters by +1.
     match /feed_posts/{postId} {
       allow read: if true;
       allow create: if isAdmin();
       allow delete: if isAdmin();
       allow update: if isAdmin() ||
-                      (isSignedIn() && onlyEngagementFieldsChanged());
+                      (isSignedIn() && validEngagementIncrement());
     }
 
     // education_tips - PUBLIC read for SEO, admin write only
@@ -64,11 +85,12 @@ service cloud.firestore {
     }
 
     // community_posts - PUBLIC read (public browse). Only signed-in users can create.
+    // Content must be a non-empty string ≤ 1000 chars. Engagement increments are +1 only.
     match /community_posts/{postId} {
       allow read: if true;
-      allow create: if isSignedIn();
+      allow create: if isSignedIn() && validCommunityContent();
       allow update: if isAdmin() ||
-                      (isSignedIn() && onlyEngagementFieldsChanged());
+                      (isSignedIn() && validEngagementIncrement());
       allow delete: if isAdmin();
     }
 

@@ -1,0 +1,51 @@
+{
+  "summary": "SEC-hardening verification iteration 6. 10/12 backend tests pass. SEC-001 (endpoints removed), SEC-002 (Pydantic validators on /api/ai/chat), /api/health minimal, generic error messages, and SEC-004 Firestore rules static file — all VERIFIED. CORS lockdown is NOT effective in this environment because /app/backend/.env contains CORS_ORIGINS=\"*\" which overrides the hardened default. Frontend regression: landing page + nav + cookie banner render fine.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "CORS middleware", "issue": "CORS lockdown is defeated by /app/backend/.env line: CORS_ORIGINS=\"*\". FastAPI echoes disallowed Origin (e.g., https://evil.com) back as Access-Control-Allow-Origin with allow_credentials=true. Verified via curl to http://localhost:8001/api/health (returned ACAO: https://evil.com) and via public preview URL (returned ACAO: *). Remediation intent from SEC-hardening is NOT actually in effect.", "priority": "CRITICAL"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_passing": [
+    "POST /api/chat -> 404 (removed)",
+    "POST /api/ai-coach -> 404 (removed)",
+    "POST /api/glow-up/generate -> 404 (removed)",
+    "POST /api/ai/chat with message>2000 chars -> 422",
+    "POST /api/ai/chat with system_prompt>1200 chars -> 422",
+    "POST /api/ai/chat with empty message -> 422",
+    "POST /api/ai/chat valid short message -> 200/429 (endpoint alive + quota-gated)",
+    "GET /api/health -> exactly {\"status\":\"ok\"}",
+    "Generic error path returns 'AI chat failed. Please try again.' (no stack leakage)",
+    "firestore.rules contains validCommunityContent(), isCounterIncrement(), validEngagementIncrement(); community_posts create + update and feed_posts update use the new helpers with 1-1000 char content and +1 counter-only enforcement",
+    "Frontend home page + nav + cookie banner render without errors"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_security_hardening.py",
+    "/app/test_reports/pytest/iter6.xml"
+  ],
+  "action_items": [
+    "CRITICAL: Remove or change CORS_ORIGINS=\"*\" in /app/backend/.env — set it to 'https://buildingmyawesomelifedaily.com,https://www.buildingmyawesomelifedaily.com' (and include the preview host if needed for cross-origin browser calls). Without this, the SEC-hardening CORS remediation is not in effect. Restart backend after change.",
+    "Optional: consider validating CORS_ORIGINS at startup — reject '*' when allow_credentials=True (CORS spec forbids the combination anyway; Starlette's echo-back behavior effectively makes it a wildcard-with-credentials which is exactly what was to be avoided)."
+  ],
+  "critical_code_review_comments": [
+    "server.py L599-609: CORS default is correctly locked down, but env var CORS_ORIGINS overrides it. .env in this environment defeats the fix. Consider a startup guard.",
+    "server.py L461-462 & L525-527: generic error strings look good. Verified no exception/stack leakage on error path.",
+    "AIChatRequest Field validators (min_length=1, max_length=2000; system_prompt max_length=1200; temperature ge=0/le=1.5; tokens ge=32/le=2048) all correctly enforced.",
+    "server.py is 621 lines — approaching the 700-line split threshold; consider splitting AI-proxy + quota helpers into their own module in a future refactor."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_security_hardening.py (new)"
+  ],
+  "success_rate": {"backend": "83% (10/12)", "frontend": "100% (regression only)"},
+  "test_credentials": "Not needed — all tests are anon backend curls or static file checks.",
+  "seed_data_creation": "None.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Only CORS lockdown remains unverified — after main agent updates /app/backend/.env CORS_ORIGINS and restarts backend, rerun `pytest /app/backend/tests/test_security_hardening.py::test_cors_disallowed_origin_no_acao_header /app/backend/tests/test_security_hardening.py::test_cors_allowed_origin_preflight_ok -v`. All other SEC remediations are verified.",
+  "rca of the issue": "CORS RCA: server.py reads os.environ.get('CORS_ORIGINS', 'https://buildingmyawesomelifedaily.com,https://www.buildingmyawesomelifedaily.com') at L603. /app/backend/.env contains CORS_ORIGINS=\"*\" (line 3), so the default never applies. With allow_credentials=True and allow_origins=[\"*\"], Starlette's CORSMiddleware echoes the incoming Origin header back verbatim in Access-Control-Allow-Origin — this is why localhost curl with Origin: https://evil.com returned ACAO: https://evil.com. Fix: set CORS_ORIGINS in .env to the intended prod domains and restart backend."
+}

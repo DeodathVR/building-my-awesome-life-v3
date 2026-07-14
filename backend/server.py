@@ -282,23 +282,10 @@ async def get_challenges():
 # ----- Health check (for UptimeRobot / Render probe) -----
 @api_router.get("/health")
 async def health():
-    """Lightweight health endpoint — always returns 200 while the server is running.
-    Reports Emergent LLM key presence + current global usage counters so you can
-    monitor from a browser."""
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    month = datetime.now(timezone.utc).strftime("%Y-%m")
-    return {
-        "status": "ok",
-        "time_utc": datetime.now(timezone.utc).isoformat(),
-        "emergent_llm_key_present": bool(os.environ.get("EMERGENT_LLM_KEY")),
-        "mongo_connected": client is not None,
-        "usage": {
-            "global_day_used": _usage_counters.get(f"global:day:{today}", 0),
-            "global_day_cap": _GLOBAL_CALLS_DAILY,
-            "global_month_used": _usage_counters.get(f"global:month:{month}", 0),
-            "global_month_cap": _GLOBAL_CALLS_MONTHLY,
-        },
-    }
+    """Lightweight health endpoint — 200 while the server is running.
+    Detailed usage counters were removed (SEC-hardening: prior version leaked
+    business signals to unauthenticated callers)."""
+    return {"status": "ok"}
 
 # ----- AI Proxy (Emergent LLM Key with multi-layer abuse protection) -----
 
@@ -447,12 +434,13 @@ async def ai_usage(request: Request):
 
 
 class AIChatRequest(BaseModel):
-    """Generic chat request used by AI Coach, Cosmic Reframer, Thought Tracker, Games Coach"""
-    message: str
-    system_prompt: Optional[str] = None
+    """Generic chat request used by AI Coach, Cosmic Reframer, Thought Tracker, Games Coach.
+    Input sizes are hard-capped server-side (SEC-002 mitigation)."""
+    message: str = Field(..., min_length=1, max_length=2000)
+    system_prompt: Optional[str] = Field(None, max_length=1200)
     history: Optional[List[Dict[str, str]]] = None  # kept for API compat, not used
-    temperature: float = 0.7
-    max_output_tokens: int = 1024
+    temperature: float = Field(0.7, ge=0.0, le=1.5)
+    max_output_tokens: int = Field(1024, ge=32, le=2048)
 
 
 @api_router.post("/ai/chat")
@@ -471,7 +459,7 @@ async def ai_chat(payload: AIChatRequest, request: Request):
         raise
     except Exception as e:
         logging.error(f"AI chat error: {e}")
-        raise HTTPException(status_code=500, detail=f"AI chat failed: {e}")
+        raise HTTPException(status_code=500, detail="AI chat failed. Please try again.")
 
 
 class FeedGenerateRequest(BaseModel):
@@ -533,53 +521,8 @@ async def ai_generate_feed(payload: FeedGenerateRequest, request: Request):
         raise
     except Exception as e:
         logging.error(f"AI feed gen error: {e}")
-        raise HTTPException(status_code=500, detail=f"AI feed gen failed: {e}")
+        raise HTTPException(status_code=500, detail="AI feed generation failed. Please try again.")
 
-
-# ----- AI Coach (legacy — kept for compat, uses Emergent LLM) -----
-
-@api_router.post("/chat", response_model=ChatResponse)
-async def chat_with_coach(chat_input: ChatMessage):
-    api_key = os.environ.get('EMERGENT_LLM_KEY')
-    if not api_key:
-        raise HTTPException(status_code=500, detail="AI Coach not configured")
-    
-    session_id = chat_input.session_id or str(uuid.uuid4())
-    
-    # Get user's habits for context
-    habits = await db.habits.find({}, {"_id": 0}).to_list(100)
-    habits_context = ""
-    if habits:
-        habits_context = "\n\nUser's current habits:\n"
-        for h in habits:
-            habits_context += f"- {h['name']} (streak: {h.get('streak', 0)} days, total: {h.get('total_completions', 0)} completions)\n"
-    
-    system_message = f"""You are a warm, encouraging habit coach for the 'Awesome Life Habits' app. 
-Your role is to help users build positive habits and mindfulness practices.
-
-Keep responses concise (2-4 sentences) and actionable.
-Use a calm, supportive tone. Celebrate wins, no matter how small.
-Suggest specific, practical tips when asked.
-Reference the user's existing habits when relevant to personalize advice.
-{habits_context}
-
-Focus areas: habit formation, mindfulness, focus exercises (flower observation, expanding circle, breath counting), 
-motivation, and the principles from Atomic Habits (start small, habit stacking, environment design)."""
-
-    try:
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=session_id,
-            system_message=system_message
-        ).with_model("gemini", "gemini-2.0-flash")
-        
-        user_message = UserMessage(text=chat_input.message)
-        response = await chat.send_message(user_message)
-        
-        return ChatResponse(response=response, session_id=session_id)
-    except Exception as e:
-        logging.error(f"AI Coach error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"AI Coach error: {str(e)}")
 
 # ----- Stats -----
 
@@ -649,81 +592,6 @@ async def seed_data():
     
     return {"message": "Sample data created"}
 
-class AICoachRequest(BaseModel):
-    message: str
-    habits: List[str] = []
-    session_id: Optional[str] = None
-
-@api_router.post("/ai-coach")
-async def ai_coach_chat(request: AICoachRequest):
-    """Legacy endpoint — kept for backward compatibility. New code uses /api/ai/chat."""
-    emergent_key = os.environ.get('EMERGENT_LLM_KEY')
-    if not emergent_key:
-        raise HTTPException(status_code=500, detail="AI service not configured")
-
-    habits_text = ', '.join(request.habits) if request.habits else 'none tracked yet'
-    system_prompt = (
-        "You are a supportive and knowledgeable AI habit coach. Your role is to: "
-        "help users build and maintain positive habits, provide encouragement and motivation, "
-        "offer practical tips for habit formation based on behavioral science, "
-        "be empathetic and understanding of struggles, celebrate wins no matter how small, "
-        "and keep responses concise but helpful (2-3 paragraphs max). "
-        f"Current user habits: {habits_text}"
-    )
-    session_id = request.session_id or str(uuid.uuid4())
-
-    try:
-        chat = LlmChat(
-            api_key=emergent_key,
-            session_id=session_id,
-            system_message=system_prompt,
-        ).with_model("gemini", "gemini-2.5-flash")
-        response = await chat.send_message(UserMessage(text=request.message))
-        return {"response": str(response) if response is not None else "", "session_id": session_id}
-    except Exception as e:
-        logging.error(f"AI Coach error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"AI Coach failed: {str(e)}")
-
-
-
-
-@api_router.post("/glow-up/generate")
-async def generate_glow_up(request: GlowUpRequest):
-    api_key = os.environ.get('EMERGENT_LLM_KEY')
-    if not api_key:
-        raise HTTPException(status_code=500, detail="AI service not configured")
-    try:
-        session_id = str(uuid.uuid4())
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=session_id,
-            system_message="You are a motivational AI that creates inspiring visual transformations showing people's healthy, vibrant best selves."
-        ).with_model("gemini", "gemini-2.0-flash-preview-image-generation").with_params(modalities=["image", "text"])
-
-        full_prompt = (
-            f"Transform this photo to show this person's best self after building these healthy habits: {request.goals}. "
-            f"Style: {request.prompt}. "
-            "Keep the person recognisable. Show them looking healthy, confident, energetic and vibrant. "
-            "This is an aspirational, motivational image. Improve lighting, posture, and vitality."
-        )
-
-        image_content = ImageContent(base64_data=request.image_base64)
-        msg = UserMessage(text=full_prompt, file_contents=[image_content])
-        text, images = await chat.send_message_multimodal_response(msg)
-
-        if images and len(images) > 0:
-            return {
-                "image_base64": images[0].get("data", ""),
-                "mime_type": images[0].get("mime_type", "image/png"),
-                "message": text or "Your transformation is ready!"
-            }
-        raise HTTPException(status_code=500, detail="No image was generated. Please try again.")
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"Glow Up generation error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
-
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -731,9 +599,13 @@ app.include_router(api_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # Locked-down origins (SEC-hardening). Defaults cover Vercel prod + preview.
+    allow_origins=[o.strip() for o in os.environ.get(
+        'CORS_ORIGINS',
+        'https://buildingmyawesomelifedaily.com,https://www.buildingmyawesomelifedaily.com'
+    ).split(',') if o.strip()],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-User-Id"],
 )
 
 # Configure logging
