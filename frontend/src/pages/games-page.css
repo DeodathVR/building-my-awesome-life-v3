@@ -188,48 +188,20 @@
 .games-s .focus-visual {
   position: relative;
   border-radius: 22px;
-  aspect-ratio: 4 / 5;
   overflow: hidden;
+  box-shadow: 0 16px 48px rgba(15,23,42,0.25);
+  border: 1px solid rgba(38, 166, 154, 0.15);
   background: linear-gradient(135deg, #1E293B, #312E81 60%, #1E293B);
-  box-shadow: 0 16px 48px rgba(15,23,42,0.35);
-  border: 1px solid rgba(255,255,255,0.08);
-  display: flex; align-items: center; justify-content: center;
 }
-.games-s .focus-visual-mandala {
-  position: absolute;
-  inset: -6%;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-  opacity: 0.85;
-  filter: saturate(1.4) brightness(1.05) drop-shadow(0 0 24px rgba(139,92,246,0.35));
-  animation: g-mandala-spin 80s linear infinite;
-  pointer-events: none;
+.games-s .focus-visual-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
 }
-.games-s .focus-visual-content {
-  position: relative; z-index: 1;
-  text-align: center;
-  padding: 20px;
-}
-.games-s .focus-timer {
-  font-size: clamp(56px, 6vw, 88px);
-  font-weight: 800;
-  color: #F8FAFC;
-  letter-spacing: 4px;
-  text-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 40px rgba(139,92,246,0.35);
-  line-height: 1;
-}
-.games-s .focus-label {
-  font-family: 'Playfair Display', serif;
-  font-size: 20px; font-weight: 600;
-  color: #FFD54F;
-  margin-top: 12px;
-  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
-  letter-spacing: 0.5px;
-}
-@keyframes g-mandala-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) {
-  .games-s .focus-visual-mandala { animation: none; }
+.dark .games-s .focus-visual {
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 16px 48px rgba(15,23,42,0.5);
 }
 
 /* AI Coach card */
@@ -459,5 +431,4 @@
 
 @media (max-width: 900px) {
   .games-s .games-layout { grid-template-columns: 1fr !important; }
-  .games-s .focus-visual { aspect-ratio: 16 / 10; }
 }

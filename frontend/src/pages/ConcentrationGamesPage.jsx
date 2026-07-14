@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Brain, Zap, Waves, Target, Dumbbell, Play } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSEO } from '../hooks/useSEO';
-import mandalaWatermark from '../assets/mandala-watermark.png';
+import focusMandala from '../assets/focus-mandala.png';
 import './games-page.css';
 
 const CONC_KEY = 'alu_concentration';
@@ -862,13 +862,14 @@ export default function ConcentrationGamesPage() {
               <h1 className="fh" style={{ fontSize: 40, fontWeight: 700, marginBottom: 4, textAlign: 'center' }}>Concentration <span style={{ background: 'linear-gradient(135deg, var(--g-teal), var(--g-gold))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Games</span></h1>
               <p style={{ fontSize: 14, color: 'var(--g-muted)', textAlign: 'center', marginBottom: 22 }}>Train your focus. Earn XP. Level up.</p>
 
-              {/* Focus Visual — Mandala + Timer */}
+              {/* Focus Visual — new mandala (25:00 timer baked into image) */}
               <div className="focus-visual au" data-testid="focus-visual" style={{ animationDelay: '.05s' }}>
-                <div className="focus-visual-mandala" style={{ backgroundImage: `url(${mandalaWatermark})` }} aria-hidden="true" />
-                <div className="focus-visual-content">
-                  <div className="focus-timer mono">25:00</div>
-                  <p className="focus-label">Deep Work Sprint</p>
-                </div>
+                <img
+                  src={focusMandala}
+                  alt="Focus mandala with 25 minute Deep Work Sprint timer"
+                  className="focus-visual-img"
+                  data-testid="focus-visual-img"
+                />
               </div>
 
               {/* AI Insight Banner */}
