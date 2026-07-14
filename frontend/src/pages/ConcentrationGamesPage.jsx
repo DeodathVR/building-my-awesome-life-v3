@@ -853,7 +853,7 @@ export default function ConcentrationGamesPage() {
         {/* Header */}
         <section style={{ paddingTop: 44, paddingBottom: 28 }} className="au">
           <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 4, color: 'var(--g-teal)', marginBottom: 8 }}>Focus Challenges</p>
-          <h1 className="fh" style={{ fontSize: 40, fontWeight: 700, marginBottom: 4 }}>Concentration <span style={{ background: 'linear-gradient(90deg, var(--g-teal), var(--g-purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Games</span></h1>
+          <h1 className="fh" style={{ fontSize: 40, fontWeight: 700, marginBottom: 4 }}>Concentration <span style={{ background: 'linear-gradient(135deg, var(--g-teal), var(--g-gold))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Games</span></h1>
           <p style={{ fontSize: 14, color: 'var(--g-muted)' }}>Train your focus. Earn XP. Level up.</p>
         </section>
 
