@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Target, Gamepad2, Wand2, BookOpen, MessageCircle, Users, Zap, ArrowRight, CheckCircle2, Shield } from 'lucide-react';
@@ -29,13 +30,27 @@ export default function LandingPage() {
     path: '/',
   });
   return (
-    <div className="alu-s" data-testid="landing-page">
-      {/* Mandala hero backdrop */}
+    <div className="alu-s landing-hero" data-testid="landing-page">
+      {/* Mandala hero backdrop — subtler + fade-out below the fold */}
       <div
         className="mandala-watermark mandala-v1"
         aria-hidden="true"
         data-testid="landing-mandala"
-        style={{ backgroundImage: `url(${mandalaWatermark})`, opacity: 0.35 }}
+        style={{ backgroundImage: `url(${mandalaWatermark})`, opacity: 0.18 }}
+      />
+      {/* Radial vignette behind hero copy so text stays crisp over the mandala */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 780,
+          background: 'radial-gradient(ellipse at 50% 32%, var(--bg) 0%, transparent 55%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
       />
 
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 24px 80px', position: 'relative', zIndex: 1 }}>

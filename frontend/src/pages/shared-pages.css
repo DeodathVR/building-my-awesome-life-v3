@@ -27,9 +27,10 @@
 .alu-s .fh { font-family: 'Playfair Display', serif; }
 .alu-s .mono { font-family: 'JetBrains Mono', monospace; }
 
-/* Dark-mode overrides — scoped to Home page only so other .alu-s pages stay untouched.
+/* Dark-mode overrides — scoped to Home page + public Landing page so other .alu-s pages stay untouched.
    Palette matches index.css .dark tokens (hsl 200 18% 10-22%). */
-.dark .alu-s[data-testid="home-page"] {
+.dark .alu-s[data-testid="home-page"],
+.dark .alu-s[data-testid="landing-page"] {
   --bg: #131b1f;
   --card: #1c262b;
   --fg: #f4f7fa;
@@ -48,7 +49,8 @@
   --shadow-m: 0 12px 32px -5px rgba(0,0,0,0.5);
   --shadow-l: 0 24px 56px -10px rgba(0,0,0,0.6);
 }
-.dark .alu-s[data-testid="home-page"] .card {
+.dark .alu-s[data-testid="home-page"] .card,
+.dark .alu-s[data-testid="landing-page"] .card {
   border-color: rgba(255,255,255,0.06);
 }
 
