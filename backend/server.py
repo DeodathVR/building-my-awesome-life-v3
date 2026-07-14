@@ -603,7 +603,7 @@ app.add_middleware(
     allow_origins=[o.strip() for o in os.environ.get(
         'CORS_ORIGINS',
         'https://buildingmyawesomelifedaily.com,https://www.buildingmyawesomelifedaily.com'
-    ).split(',') if o.strip()],
+    ).split(',') if o.strip() and o.strip() != '*'],
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-User-Id"],
 )
