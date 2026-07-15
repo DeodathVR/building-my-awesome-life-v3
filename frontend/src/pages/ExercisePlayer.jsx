@@ -33,7 +33,7 @@ const exerciseDetails = {
         title: 'Candle Flame Flicker',
         defaultDuration: 5,
         hasPalettes: false,
-        theme: 'default'
+        theme: 'dark-navy'
     },
     'breath-counter': {
         title: 'Breath Counter',
@@ -55,9 +55,9 @@ const themeStyles = {
         backBtnBg: 'bg-card/80 hover:bg-card',
     },
     'dark-navy': {
-        pageBg: '#0B1830',
+        pageBg: '#060B18',
         titleColor: '#E6ECF6',
-        controlCard: 'bg-white/[0.06] backdrop-blur-md border-white/10',
+        controlCard: 'bg-white/[0.06] backdrop-blur-xl border-white/15 shadow-[0_0_60px_rgba(126,200,184,0.18),inset_0_1px_0_rgba(255,255,255,0.14)] ring-1 ring-white/10',
         timerText: 'text-white',
         subText: 'text-white/60',
         backBtnBg: 'bg-white/10 hover:bg-white/20 text-white',

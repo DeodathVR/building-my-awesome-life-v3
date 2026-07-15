@@ -42,7 +42,10 @@ export const CandleFlame = ({ isPlaying }) => {
         }}
       />
 
-      {/* Mandala backdrop — warm-tinted geometric sacred pattern */}
+      {/* Mandala backdrop — warm-tinted geometric sacred pattern
+          Double-ring radial mask: hides the center (baked '25:00 / Deep Work Sprint' text)
+          AND feathers the outer edge of the source PNG so its rectangular background
+          seamlessly dissolves into the dark navy scene — no visible edge. */}
       <img
         src={mandalaBackdrop}
         alt=""
@@ -51,10 +54,14 @@ export const CandleFlame = ({ isPlaying }) => {
         style={{
           position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
           width: 560, height: 'auto',
-          opacity: 0.55, mixBlendMode: 'screen',
+          opacity: 0.7, mixBlendMode: 'screen',
           filter: 'sepia(0.5) hue-rotate(-15deg) saturate(1.5) brightness(1.1) drop-shadow(0 0 40px rgba(255,183,77,0.5))',
           animation: isPlaying ? 'candle-mandala-spin 90s linear infinite' : 'none',
           pointerEvents: 'none',
+          WebkitMaskImage:
+            'radial-gradient(circle at 50% 50%, transparent 0%, transparent 14%, rgba(0,0,0,0.55) 22%, #000 32%, #000 46%, rgba(0,0,0,0.6) 58%, transparent 72%, transparent 100%)',
+          maskImage:
+            'radial-gradient(circle at 50% 50%, transparent 0%, transparent 14%, rgba(0,0,0,0.55) 22%, #000 32%, #000 46%, rgba(0,0,0,0.6) 58%, transparent 72%, transparent 100%)',
         }}
       />
 
