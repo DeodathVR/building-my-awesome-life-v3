@@ -134,7 +134,7 @@ export const CandleFlame = ({ isPlaying }) => {
             height: '42.27%',
             transformOrigin: '50% 92%', // pivot near the wick base
             animation: isPlaying
-              ? 'candle-flame-flicker 1.8s ease-in-out infinite'
+              ? 'candle-flame-flicker 2.4s ease-in-out infinite'
               : 'none',
             willChange: 'transform, filter',
           }}
@@ -174,15 +174,15 @@ export const CandleFlame = ({ isPlaying }) => {
 
       <style>{`
         @keyframes candle-flame-flicker {
-          /* Natural, gentle flicker — subtle sway and brightness pulse like a real candle. */
-          0%   { transform: rotate(-2deg)   translateX(-1.5px) scaleY(0.97) scaleX(1.02); filter: brightness(0.95); }
-          15%  { transform: rotate(1.5deg)  translateX(1px)    scaleY(1.03) scaleX(0.98); filter: brightness(1.07); }
-          30%  { transform: rotate(-1deg)   translateX(-0.5px) scaleY(1.00) scaleX(1.00); filter: brightness(1.00); }
-          45%  { transform: rotate(2.5deg)  translateX(1.5px)  scaleY(1.04) scaleX(0.97); filter: brightness(1.09); }
-          60%  { transform: rotate(-0.5deg) translateX(0)      scaleY(0.98) scaleX(1.01); filter: brightness(0.97); }
-          75%  { transform: rotate(2deg)    translateX(1px)    scaleY(1.02) scaleX(0.99); filter: brightness(1.05); }
-          90%  { transform: rotate(-1.5deg) translateX(-1px)   scaleY(1.00) scaleX(1.00); filter: brightness(1.01); }
-          100% { transform: rotate(1deg)    translateX(0.5px)  scaleY(1.01) scaleX(0.99); filter: brightness(1.03); }
+          /* Very subtle flicker — barely perceptible sway, gentle brightness pulse. */
+          0%   { transform: rotate(-1deg)    translateX(-0.5px) scaleY(0.985) scaleX(1.01); filter: brightness(0.97); }
+          15%  { transform: rotate(0.7deg)   translateX(0.3px)  scaleY(1.015) scaleX(0.99); filter: brightness(1.03); }
+          30%  { transform: rotate(-0.5deg)  translateX(-0.2px) scaleY(1.00)  scaleX(1.00); filter: brightness(1.00); }
+          45%  { transform: rotate(1.2deg)   translateX(0.5px)  scaleY(1.02)  scaleX(0.99); filter: brightness(1.05); }
+          60%  { transform: rotate(-0.3deg)  translateX(0)      scaleY(0.99)  scaleX(1.005);filter: brightness(0.98); }
+          75%  { transform: rotate(0.9deg)   translateX(0.3px)  scaleY(1.01)  scaleX(0.995);filter: brightness(1.02); }
+          90%  { transform: rotate(-0.7deg)  translateX(-0.3px) scaleY(1.00)  scaleX(1.00); filter: brightness(1.00); }
+          100% { transform: rotate(0.5deg)   translateX(0.2px)  scaleY(1.005) scaleX(0.995);filter: brightness(1.02); }
         }
         @keyframes candle-glow {
           0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(1); }
