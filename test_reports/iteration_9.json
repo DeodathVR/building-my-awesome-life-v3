@@ -1,0 +1,52 @@
+{
+  "summary": "Frontend-only cinematic redesign verification for Circle Concentration (/exercise/expanding-circle) and Candle Flame (/exercise/candle-flame). All acceptance criteria PASSED. Regression on /exercise/flower-observation and /exercise/breath-counter also passed (default theme preserved).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "acceptance_criteria_verified": {
+    "circle_concentration": {
+      "whole_page_pastel_gradient": "PASS - exercise-player inline background = 'linear-gradient(120deg, rgb(255,233,210) 0%, rgb(247,234,217) 22%, ... rgb(222,211,228) 100%)' covering full player (including behind controls card)",
+      "heading_visible": "PASS - 'Circle Concentration' visible at top",
+      "breath_cue_testid": "PASS - data-testid='breath-cue' present, teal italic; alternates 'Breathe In' <-> 'Breathe Out' during play",
+      "mandala_backdrop_testid": "PASS - data-testid='circle-mandala-backdrop' present with rings, diagonals, triangles, flecks",
+      "eight_orbs": "PASS - circle-orb-0 through circle-orb-7 all present (count=1 each)",
+      "central_sphere_with_focus_dot": "PASS - circle-central-sphere renders teal/aqua sphere with dark focus dot (visible in screenshot)",
+      "controls_translucent_glassy": "PASS - controls card is bg-white/45 backdrop-blur, pastel gradient visible through",
+      "sphere_breathes_when_playing": "PASS - transform scale changed from 0.55 (paused) to 1.02822 (mid-cycle after play), cue text also switched Breathe In -> Breathe Out"
+    },
+    "candle_flame": {
+      "uniform_dark_navy_background": "PASS - exercise-player computed backgroundColor = rgb(11,24,48) AND inline background = 'rgb(11, 24, 48)'; candle-scene bg = rgb(11,24,48). No seam between exercise area and controls area (verified visually and via matching color values)",
+      "large_mandala_backdrop": "PASS - candle-mandala-backdrop bounding box 820x820 vs candle 280x495 (mandala substantially bigger than candle)",
+      "no_baked_text_in_mandala": "PASS - mandala is pure inline SVG (no <image> element, no 25:00, no 'Deep Work Sprint' text in DOM or visually)",
+      "candle_svg_renders": "PASS - candle-svg present with wax drips, wick, animated flame group",
+      "controls_dark_translucent": "PASS - control card bg = rgba(255,255,255,0.06) (backdrop-blur on dark navy)",
+      "title_light_readable": "PASS - h1 color = rgb(230,236,246) (light on dark navy)",
+      "flame_and_sparks_animate": "PASS - 18 candle-spark elements rendered; flame group has candle-flame-flicker animation when isPlaying=true"
+    },
+    "reset_and_slider": {
+      "reset_button": "PASS - reset button present on both exercises, timer resets correctly",
+      "duration_slider": "PASS - visible on both exercises when paused"
+    },
+    "regression": {
+      "flower_observation_default_theme": "PASS - exercise-player inline background is empty string (default theme intact), palette-button still present",
+      "breath_counter_default_theme": "PASS - exercise-player inline background is empty string (default theme intact)"
+    }
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ExercisePlayer.jsx line 79-80: setDuration/setTimeRemaining initialization uses exerciseDetails[exerciseId]?.defaultDuration only on mount; navigating between different exercises in same session without unmount would carry over duration - not observed here since routes remount, non-issue in practice.",
+    "The auto-hide controls (3s) can hide the play button while user is still trying to interact - during testing the pause button ended up outside the viewport (bottom controls slide down); minor UX concern but the mousemove handler reveals them again as designed."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (skipped as requested)", "frontend": "100%" },
+  "test_credentials": "Created: qa-cinema-ehwcjy7y@example.com / testpass123 (Firebase email/password signup on preview URL)",
+  "seed_data_creation": "One test user account created via Firebase signup (see test_credentials).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Cinematic redesign of ExpandingCircle and CandleFlame verified end-to-end. Theme system in ExercisePlayer.jsx (themeStyles map keyed by 'pastel' / 'dark-navy' / 'default') works cleanly and does not affect the other two exercises. Reusable test creds: qa-cinema-ehwcjy7y@example.com / testpass123.",
+  "rca of the issue": "N/A - no bugs found."
+}

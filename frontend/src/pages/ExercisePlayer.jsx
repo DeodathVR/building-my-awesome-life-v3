@@ -20,23 +20,56 @@ const exerciseDetails = {
     'flower-observation': {
         title: 'Flower Observation',
         defaultDuration: 5,
-        hasPalettes: true
+        hasPalettes: true,
+        theme: 'default'
     },
     'expanding-circle': {
         title: 'Circle Concentration',
         defaultDuration: 4,
-        hasPalettes: false
+        hasPalettes: false,
+        theme: 'pastel'
     },
     'candle-flame': {
         title: 'Candle Flame Flicker',
         defaultDuration: 5,
-        hasPalettes: false
+        hasPalettes: false,
+        theme: 'dark-navy'
     },
     'breath-counter': {
         title: 'Breath Counter',
         defaultDuration: 5,
-        hasPalettes: false
+        hasPalettes: false,
+        theme: 'default'
     }
+};
+
+// Per-exercise page theming (background + control-card styling) so the entire
+// player surface reads as one cinematic scene.
+const themeStyles = {
+    'default': {
+        pageBg: undefined,
+        titleColor: undefined,
+        controlCard: 'bg-card/80 backdrop-blur-md border-border',
+        timerText: 'text-foreground',
+        subText: 'text-muted-foreground',
+        backBtnBg: 'bg-card/80 hover:bg-card',
+    },
+    'dark-navy': {
+        pageBg: '#0B1830',
+        titleColor: '#E6ECF6',
+        controlCard: 'bg-white/[0.06] backdrop-blur-md border-white/10',
+        timerText: 'text-white',
+        subText: 'text-white/60',
+        backBtnBg: 'bg-white/10 hover:bg-white/20 text-white',
+    },
+    'pastel': {
+        pageBg: 'linear-gradient(120deg, #FFE9D2 0%, #F7EAD9 22%, #EFE6E6 48%, #E6DDEA 72%, #DED3E4 100%)',
+        titleColor: '#26333F',
+        controlCard: 'bg-white/45 backdrop-blur-md border-white/60',
+        timerText: 'text-slate-800',
+        subText: 'text-slate-600',
+        backBtnBg: 'bg-white/60 hover:bg-white/80 text-slate-800',
+    },
 };
 
 export const ExercisePlayer = () => {
@@ -53,6 +86,7 @@ export const ExercisePlayer = () => {
     
     const ExerciseComponent = exerciseComponents[exerciseId];
     const details = exerciseDetails[exerciseId];
+    const theme = themeStyles[details?.theme || 'default'] || themeStyles.default;
     
     useEffect(() => {
         setTimeRemaining(duration * 60);
@@ -138,7 +172,8 @@ export const ExercisePlayer = () => {
     
     return (
         <div 
-            className="fixed inset-0 bg-background flex items-center justify-center z-50"
+            className="fixed inset-0 flex items-center justify-center z-50"
+            style={theme.pageBg ? { background: theme.pageBg } : undefined}
             onMouseMove={handleMouseMove}
             data-testid="exercise-player"
         >
@@ -146,7 +181,7 @@ export const ExercisePlayer = () => {
             <Button
                 variant="ghost"
                 size="icon"
-                className={`fixed top-6 left-6 z-50 rounded-full bg-card/80 backdrop-blur-sm hover:bg-card transition-all duration-300 ${
+                className={`fixed top-6 left-6 z-50 rounded-full ${theme.backBtnBg} backdrop-blur-sm transition-all duration-300 ${
                     showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`}
                 onClick={() => navigate('/focus')}
@@ -161,7 +196,10 @@ export const ExercisePlayer = () => {
                     showControls ? 'opacity-100' : 'opacity-0'
                 }`}
             >
-                <h1 className="text-2xl font-serif font-light text-foreground">
+                <h1
+                    className={`text-2xl font-serif font-light ${theme.titleColor ? '' : 'text-foreground'}`}
+                    style={theme.titleColor ? { color: theme.titleColor } : undefined}
+                >
                     {details.title}
                 </h1>
             </div>
@@ -230,14 +268,14 @@ export const ExercisePlayer = () => {
                     showControls ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
                 }`}
             >
-                <Card className="m-6 p-6 bg-card/80 backdrop-blur-md border-border">
+                <Card className={`m-6 p-6 ${theme.controlCard}`}>
                     <div className="max-w-2xl mx-auto space-y-6">
                         {/* Timer Display */}
                         <div className="text-center">
-                            <div className="text-4xl font-serif text-foreground mb-2" data-testid="timer-display">
+                            <div className={`text-4xl font-serif mb-2 ${theme.timerText}`} data-testid="timer-display">
                                 {formatTime(timeRemaining)}
                             </div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className={`text-sm ${theme.subText}`}>
                                 {timeRemaining === 0 ? 'Session Complete' : 'Time Remaining'}
                             </div>
                         </div>
@@ -271,7 +309,7 @@ export const ExercisePlayer = () => {
                         {/* Duration Slider */}
                         {!isPlaying && (
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                <div className={`flex items-center justify-between text-sm ${theme.subText}`}>
                                     <span>Duration</span>
                                     <span>{duration} minutes</span>
                                 </div>

@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
-import mandalaBackdrop from '@/assets/candle-mandala.png';
 
 /**
  * Candle Flame Flicker — mindful focus exercise
- * All-SVG scene: sacred mandala backdrop + realistic dripping candle + animated flame + sparks.
+ * Pure-SVG scene: warm sacred mandala backdrop + realistic dripping candle +
+ * animated flame + drifting sparks. Fills full page with matching dark navy.
  */
 export const CandleFlame = ({ isPlaying }) => {
   const sparks = useMemo(
-    () => Array.from({ length: 16 }).map((_, i) => ({
+    () => Array.from({ length: 18 }).map((_, i) => ({
       id: i,
       leftPct: 45 + Math.random() * 10,
       delay: (Math.random() * 3).toFixed(2),
@@ -27,49 +27,133 @@ export const CandleFlame = ({ isPlaying }) => {
         width: '100%',
         height: '100%',
         overflow: 'hidden',
-        background: 'radial-gradient(ellipse at 50% 62%, #0F1E33 0%, #060B18 90%)',
+        background: '#0B1830',
       }}
     >
-      {/* Warm ambient glow */}
+      {/* Warm ambient glow behind flame */}
       <div
         aria-hidden="true"
         style={{
-          position: 'absolute', left: '50%', top: '52%', transform: 'translate(-50%, -50%)',
-          width: 640, height: 640, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,183,77,0.30) 0%, rgba(255,152,64,0.14) 30%, transparent 72%)',
-          filter: 'blur(24px)', pointerEvents: 'none',
+          position: 'absolute', left: '50%', top: '46%', transform: 'translate(-50%, -50%)',
+          width: 820, height: 820, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(255,183,77,0.28) 0%, rgba(255,152,64,0.12) 32%, transparent 72%)',
+          filter: 'blur(28px)', pointerEvents: 'none',
           animation: isPlaying ? 'candle-glow 4.5s ease-in-out infinite' : 'none',
         }}
       />
 
-      {/* Mandala backdrop — warm-tinted geometric sacred pattern */}
-      <img
-        src={mandalaBackdrop}
-        alt=""
+      {/* Pure-SVG sacred mandala backdrop (no baked text, scalable) */}
+      <svg
         aria-hidden="true"
         data-testid="candle-mandala-backdrop"
+        viewBox="0 0 400 400"
         style={{
-          position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-          width: 560, height: 'auto',
-          opacity: 0.55, mixBlendMode: 'screen',
-          filter: 'sepia(0.5) hue-rotate(-15deg) saturate(1.5) brightness(1.1) drop-shadow(0 0 40px rgba(255,183,77,0.5))',
+          position: 'absolute',
+          left: '50%',
+          top: '46%',
+          transform: 'translate(-50%, -50%)',
+          width: 820,
+          height: 820,
+          maxWidth: '92vw',
+          maxHeight: '92vh',
+          opacity: 0.55,
+          mixBlendMode: 'screen',
+          filter: 'drop-shadow(0 0 40px rgba(255,183,77,0.45))',
           animation: isPlaying ? 'candle-mandala-spin 90s linear infinite' : 'none',
           pointerEvents: 'none',
         }}
-      />
+      >
+        <defs>
+          <radialGradient id="mandala-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(255,220,140,0.55)" />
+            <stop offset="60%" stopColor="rgba(255,183,77,0.18)" />
+            <stop offset="100%" stopColor="rgba(255,152,64,0)" />
+          </radialGradient>
+          <linearGradient id="mandala-stroke" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#FFD98A" />
+            <stop offset="50%" stopColor="#FFB74D" />
+            <stop offset="100%" stopColor="#7EC8B8" />
+          </linearGradient>
+        </defs>
+
+        {/* Soft radial glow disc */}
+        <circle cx="200" cy="200" r="180" fill="url(#mandala-glow)" />
+
+        {/* 12-fold petal layers */}
+        {[0, 1, 2].map(ringIdx => {
+          const r = 60 + ringIdx * 45;
+          return (
+            <g key={`ring-${ringIdx}`} opacity={0.9 - ringIdx * 0.18}>
+              {Array.from({ length: 12 }).map((_, i) => {
+                const angle = (i * 360) / 12;
+                return (
+                  <ellipse
+                    key={i}
+                    cx="200"
+                    cy={200 - r}
+                    rx={r * 0.28}
+                    ry={r * 0.72}
+                    fill="none"
+                    stroke="url(#mandala-stroke)"
+                    strokeWidth="0.6"
+                    transform={`rotate(${angle} 200 200)`}
+                  />
+                );
+              })}
+            </g>
+          );
+        })}
+
+        {/* Radial spokes */}
+        <g opacity="0.6">
+          {Array.from({ length: 24 }).map((_, i) => {
+            const angle = (i * 360) / 24;
+            return (
+              <line
+                key={`spoke-${i}`}
+                x1="200"
+                y1="200"
+                x2="200"
+                y2="30"
+                stroke="url(#mandala-stroke)"
+                strokeWidth="0.35"
+                transform={`rotate(${angle} 200 200)`}
+              />
+            );
+          })}
+        </g>
+
+        {/* Star points (8-pointed) */}
+        <g opacity="0.85">
+          {Array.from({ length: 8 }).map((_, i) => {
+            const angle = (i * 360) / 8;
+            return (
+              <g key={`star-${i}`} transform={`rotate(${angle} 200 200)`}>
+                <circle cx="200" cy="30" r="2.2" fill="#FFE9B0" />
+                <circle cx="200" cy="30" r="5" fill="#FFE9B0" opacity="0.35" />
+              </g>
+            );
+          })}
+        </g>
+
+        {/* Concentric rings */}
+        <circle cx="200" cy="200" r="60" fill="none" stroke="url(#mandala-stroke)" strokeWidth="0.5" opacity="0.75" />
+        <circle cx="200" cy="200" r="105" fill="none" stroke="url(#mandala-stroke)" strokeWidth="0.5" opacity="0.6" />
+        <circle cx="200" cy="200" r="150" fill="none" stroke="url(#mandala-stroke)" strokeWidth="0.5" opacity="0.5" />
+        <circle cx="200" cy="200" r="175" fill="none" stroke="url(#mandala-stroke)" strokeWidth="0.4" opacity="0.4" />
+      </svg>
 
       {/* Candle scene (SVG) */}
       <svg
         data-testid="candle-svg"
         viewBox="0 0 260 460"
         style={{
-          position: 'absolute', left: '50%', top: '54%', transform: 'translate(-50%, -50%)',
-          width: 260, filter: 'drop-shadow(0 26px 32px rgba(0,0,0,0.55))', pointerEvents: 'none',
+          position: 'absolute', left: '50%', top: '52%', transform: 'translate(-50%, -50%)',
+          width: 280, filter: 'drop-shadow(0 26px 32px rgba(0,0,0,0.55))', pointerEvents: 'none',
         }}
         aria-hidden="true"
       >
         <defs>
-          {/* Candle body — soft ivory to warm shadow */}
           <linearGradient id="candle-body" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#5A4A38" />
             <stop offset="18%" stopColor="#D8C8AE" />
@@ -172,16 +256,6 @@ export const CandleFlame = ({ isPlaying }) => {
           />
         ))}
       </div>
-
-      {/* Soft instruction (bottom, non-overlapping with header) */}
-      <p style={{
-        position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-        color: 'rgba(224,242,241,0.55)', fontSize: 12, fontWeight: 500,
-        letterSpacing: 1, textAlign: 'center', maxWidth: 280, margin: 0,
-        fontStyle: 'italic',
-      }}>
-        Gaze softly at the flame. Let thoughts drift by like sparks.
-      </p>
 
       <style>{`
         @keyframes candle-flame-flicker {

@@ -309,14 +309,25 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(1100px, 95vh);
+  width: min(1700px, 140vh);
   aspect-ratio: 782 / 1170;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  opacity: 0.50;
+  opacity: 0.18;
   filter: saturate(1.2);
   animation: alu-mandalaSpin 60s linear infinite;
+}
+/* Radial vignette protects text zones (top hero + card rows) so copy stays crisp
+   while the mandala keeps a wide artistic presence on the sides. */
+.alu-s[data-testid="home-page"]::before,
+.alu-s[data-testid="landing-page"]::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse 85% 60% at 50% 40%, var(--bg) 0%, transparent 55%);
+  pointer-events: none;
+  z-index: 0;
 }
 @keyframes alu-mandalaSpin {
   from { transform: translate(-50%, -50%) rotate(0deg); }
