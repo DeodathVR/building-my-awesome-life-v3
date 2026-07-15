@@ -134,7 +134,7 @@ export const CandleFlame = ({ isPlaying }) => {
             height: '42.27%',
             transformOrigin: '50% 92%', // pivot near the wick base
             animation: isPlaying
-              ? 'candle-flame-flicker 0.22s ease-in-out infinite alternate'
+              ? 'candle-flame-flicker 1.4s ease-in-out infinite'
               : 'none',
             willChange: 'transform, filter',
           }}
@@ -174,10 +174,12 @@ export const CandleFlame = ({ isPlaying }) => {
 
       <style>{`
         @keyframes candle-flame-flicker {
-          0%   { transform: rotate(-1.4deg) scaleY(0.97) scaleX(1.02); filter: brightness(0.98); }
-          40%  { transform: rotate(0.6deg)  scaleY(1.04) scaleX(0.98); filter: brightness(1.06); }
-          70%  { transform: rotate(-0.4deg) scaleY(1.01) scaleX(1);    filter: brightness(1.02); }
-          100% { transform: rotate(1.2deg)  scaleY(1)    scaleX(1);    filter: brightness(1); }
+          0%   { transform: rotate(-4deg) translateX(-2px) scaleY(0.94) scaleX(1.04); filter: brightness(0.92); }
+          20%  { transform: rotate(2deg)  translateX(1px)  scaleY(1.06) scaleX(0.97); filter: brightness(1.12); }
+          40%  { transform: rotate(-2deg) translateX(-1px) scaleY(1.02) scaleX(1.01); filter: brightness(1.02); }
+          60%  { transform: rotate(4deg)  translateX(2px)  scaleY(1.08) scaleX(0.95); filter: brightness(1.15); }
+          80%  { transform: rotate(-1deg) translateX(0)    scaleY(0.97) scaleX(1.02); filter: brightness(0.96); }
+          100% { transform: rotate(3deg)  translateX(1px)  scaleY(1.04) scaleX(0.98); filter: brightness(1.08); }
         }
         @keyframes candle-glow {
           0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(1); }
