@@ -59,9 +59,9 @@ export const CandleFlame = ({ isPlaying }) => {
           animation: isPlaying ? 'candle-mandala-spin 90s linear infinite' : 'none',
           pointerEvents: 'none',
           WebkitMaskImage:
-            'radial-gradient(circle at 50% 50%, transparent 0%, transparent 14%, rgba(0,0,0,0.55) 22%, #000 32%, #000 46%, rgba(0,0,0,0.6) 58%, transparent 72%, transparent 100%)',
+            'radial-gradient(circle at 50% 50%, transparent 0px, transparent 60px, rgba(0,0,0,0.55) 90px, #000 130px, #000 215px, rgba(0,0,0,0.6) 245px, transparent 280px)',
           maskImage:
-            'radial-gradient(circle at 50% 50%, transparent 0%, transparent 14%, rgba(0,0,0,0.55) 22%, #000 32%, #000 46%, rgba(0,0,0,0.6) 58%, transparent 72%, transparent 100%)',
+            'radial-gradient(circle at 50% 50%, transparent 0px, transparent 60px, rgba(0,0,0,0.55) 90px, #000 130px, #000 215px, rgba(0,0,0,0.6) 245px, transparent 280px)',
         }}
       />
 
