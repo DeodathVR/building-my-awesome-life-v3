@@ -33,7 +33,7 @@ const exerciseDetails = {
         title: 'Candle Flame Flicker',
         defaultDuration: 5,
         hasPalettes: false,
-        theme: 'dark-navy'
+        theme: 'default'
     },
     'breath-counter': {
         title: 'Breath Counter',
