@@ -134,7 +134,7 @@ export const CandleFlame = ({ isPlaying }) => {
             height: '42.27%',
             transformOrigin: '50% 92%', // pivot near the wick base
             animation: isPlaying
-              ? 'candle-flame-flicker 1.4s ease-in-out infinite'
+              ? 'candle-flame-flicker 1.1s ease-in-out infinite'
               : 'none',
             willChange: 'transform, filter',
           }}
@@ -174,12 +174,14 @@ export const CandleFlame = ({ isPlaying }) => {
 
       <style>{`
         @keyframes candle-flame-flicker {
-          0%   { transform: rotate(-4deg) translateX(-2px) scaleY(0.94) scaleX(1.04); filter: brightness(0.92); }
-          20%  { transform: rotate(2deg)  translateX(1px)  scaleY(1.06) scaleX(0.97); filter: brightness(1.12); }
-          40%  { transform: rotate(-2deg) translateX(-1px) scaleY(1.02) scaleX(1.01); filter: brightness(1.02); }
-          60%  { transform: rotate(4deg)  translateX(2px)  scaleY(1.08) scaleX(0.95); filter: brightness(1.15); }
-          80%  { transform: rotate(-1deg) translateX(0)    scaleY(0.97) scaleX(1.02); filter: brightness(0.96); }
-          100% { transform: rotate(3deg)  translateX(1px)  scaleY(1.04) scaleX(0.98); filter: brightness(1.08); }
+          0%   { transform: rotate(-9deg) translateX(-6px) scaleY(0.88) scaleX(1.08); filter: brightness(0.85); }
+          15%  { transform: rotate(6deg)  translateX(4px)  scaleY(1.10) scaleX(0.94); filter: brightness(1.20); }
+          30%  { transform: rotate(-5deg) translateX(-3px) scaleY(1.02) scaleX(1.00); filter: brightness(0.98); }
+          45%  { transform: rotate(10deg) translateX(7px)  scaleY(1.14) scaleX(0.92); filter: brightness(1.25); }
+          60%  { transform: rotate(-2deg) translateX(-1px) scaleY(0.94) scaleX(1.04); filter: brightness(0.92); }
+          75%  { transform: rotate(8deg)  translateX(5px)  scaleY(1.08) scaleX(0.96); filter: brightness(1.15); }
+          90%  { transform: rotate(-7deg) translateX(-4px) scaleY(1.00) scaleX(1.02); filter: brightness(1.02); }
+          100% { transform: rotate(4deg)  translateX(2px)  scaleY(1.05) scaleX(0.98); filter: brightness(1.10); }
         }
         @keyframes candle-glow {
           0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(1); }
