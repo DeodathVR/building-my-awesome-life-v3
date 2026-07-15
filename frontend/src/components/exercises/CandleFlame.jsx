@@ -198,7 +198,12 @@ export const CandleFlame = ({ isPlaying }) => {
           100% { transform: translate(var(--drift), -320px) scale(0.15); opacity: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .candle-scene *, .candle-scene g { animation: none !important; }
+          /* Keep the flame flicker — it's essential to the meditation exercise.
+             Only disable the decorative mandala spin, spark drift, and glow pulse. */
+          [data-testid="candle-mandala-backdrop"],
+          [data-testid="candle-spark"] {
+            animation: none !important;
+          }
         }
       `}</style>
     </div>
