@@ -5,6 +5,7 @@
 - Auth providers: **Email/Password + Google sign-in** (both verified working in production)
 - **Admin email (hardcoded):** `sparksofmotivation1001@gmail.com` — only this account sees `/admin`
 - For test signups: any email format works (e.g., `tester{n}@example.com` with password 6+ chars)
+- **QA test account (email/password, verified 2026-02-15):** `qa-cinema-ehwcjy7y@example.com` / `testpass123`
 - Firebase API key (current/working): `AIzaSyBMOZyZIcgakUK9ul9Fq_F-CxkjUVz-oEE`
 - Firebase project: `building-my-awesome-life` (web app v2: `1:255547195545:web:166b043de1bfc5e75b7808`)
 

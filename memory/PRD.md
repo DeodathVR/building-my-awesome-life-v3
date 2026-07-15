@@ -25,6 +25,12 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
 - [x] Mobile responsive design
 
 ## Changelog — Feb 2026
+- **Feb 15, 2026**: **Cinematic redesign — Circle Concentration + Candle Flame Flicker**
+  - `ExpandingCircle.jsx` fully rewritten: warm pastel gradient (peach → cream → lavender), pure-SVG sacred-geometry backdrop (concentric rings, triangles, diagonal lines, star sparkles), 8 glowing teal orbs on outer ring with staggered pulse, central teal/aqua breathing sphere with black focus dot + warm rim glow, "Breathe In/Out" cue text in italic teal.
+  - `CandleFlame.jsx`: replaced baked PNG mandala (which had "25:00 Deep Work Sprint" text visible) with a scalable inline SVG mandala — bigger (820×820), no baked text, 12-fold petal ring + 24 radial spokes + 8 star points + concentric rings.
+  - `ExercisePlayer.jsx`: added per-exercise `themeStyles` map (`pastel` / `dark-navy` / `default`); the outer player container now inherits the exercise's background so the full page (including behind the bottom controls card) reads as one cinematic scene. Controls card, timer text, title color, and back button styles adapt per theme.
+  - Verified end-to-end by testing agent (iteration_9.json) — 100% frontend pass on all acceptance criteria + regression on Flower Observation and Breath Counter (default theme preserved).
+
 - **Feb 2026**: Renamed "Hub" → "Home" throughout UI & routing
   - `HubPage.jsx` → `HomePage.jsx` (component/default export renamed)
   - `Navigation.jsx` label "Hub" → "Home"
