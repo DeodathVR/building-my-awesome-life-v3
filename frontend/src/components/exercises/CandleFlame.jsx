@@ -43,9 +43,8 @@ export const CandleFlame = ({ isPlaying }) => {
       />
 
       {/* Mandala backdrop — warm-tinted geometric sacred pattern
-          Double-ring radial mask: hides the center (baked '25:00 / Deep Work Sprint' text)
-          AND feathers the outer edge of the source PNG so its rectangular background
-          seamlessly dissolves into the dark navy scene — no visible edge. */}
+          Source PNG has been cleaned of baked-in center text via 12-fold rotational
+          median (see /app/scripts/clean-mandala.md). No CSS mask needed anymore. */}
       <img
         src={mandalaBackdrop}
         alt=""
@@ -53,15 +52,11 @@ export const CandleFlame = ({ isPlaying }) => {
         data-testid="candle-mandala-backdrop"
         style={{
           position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-          width: 560, height: 'auto',
-          opacity: 0.7, mixBlendMode: 'screen',
+          width: 620, height: 'auto',
+          opacity: 0.72, mixBlendMode: 'screen',
           filter: 'sepia(0.5) hue-rotate(-15deg) saturate(1.5) brightness(1.1) drop-shadow(0 0 40px rgba(255,183,77,0.5))',
           animation: isPlaying ? 'candle-mandala-spin 90s linear infinite' : 'none',
           pointerEvents: 'none',
-          WebkitMaskImage:
-            'radial-gradient(circle at 50% 50%, transparent 0px, transparent 60px, rgba(0,0,0,0.55) 90px, #000 130px, #000 215px, rgba(0,0,0,0.6) 245px, transparent 280px)',
-          maskImage:
-            'radial-gradient(circle at 50% 50%, transparent 0px, transparent 60px, rgba(0,0,0,0.55) 90px, #000 130px, #000 215px, rgba(0,0,0,0.6) 245px, transparent 280px)',
         }}
       />
 
