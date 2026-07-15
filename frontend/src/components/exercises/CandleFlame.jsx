@@ -2,8 +2,9 @@ import React, { useMemo } from 'react';
 import mandalaBackdrop from '@/assets/candle-mandala.png';
 
 /**
- * Candle Flame Flicker — mindful focus exercise
- * All-SVG scene: sacred mandala backdrop + realistic dripping candle + animated flame + sparks.
+ * Candle Flame Flicker — mindful focus exercise.
+ * The mandala PNG is used as the FULL PAGE background (cover); the candle SVG
+ * with animated flame + sparks is layered on top, positioned in the center.
  */
 export const CandleFlame = ({ isPlaying }) => {
   const sparks = useMemo(
@@ -27,51 +28,74 @@ export const CandleFlame = ({ isPlaying }) => {
         width: '100%',
         height: '100%',
         overflow: 'hidden',
-        background: 'radial-gradient(ellipse at 50% 62%, #0F1E33 0%, #060B18 90%)',
+        // Full-page mandala background — the PNG fills the entire viewport.
+        backgroundColor: '#0B1830',
+        backgroundImage: `url(${mandalaBackdrop})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Warm ambient glow */}
+      {/* Slow rotation of the mandala background */}
+      <div
+        aria-hidden="true"
+        data-testid="candle-mandala-backdrop"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `url(${mandalaBackdrop})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+          animation: isPlaying ? 'candle-mandala-spin 90s linear infinite' : 'none',
+          transformOrigin: 'center center',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Subtle vignette — dark at top (for title) and bottom (for controls card) */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background:
+            'linear-gradient(180deg, rgba(11,24,48,0.55) 0%, rgba(11,24,48,0) 18%, rgba(11,24,48,0) 62%, rgba(11,24,48,0.55) 100%)',
+        }}
+      />
+
+      {/* Corner vignette — softens the edges into the navy */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background:
+            'radial-gradient(ellipse at center, transparent 40%, rgba(11,24,48,0.45) 100%)',
+        }}
+      />
+
+      {/* Warm ambient glow around the flame */}
       <div
         aria-hidden="true"
         style={{
           position: 'absolute', left: '50%', top: '52%', transform: 'translate(-50%, -50%)',
           width: 640, height: 640, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,183,77,0.30) 0%, rgba(255,152,64,0.14) 30%, transparent 72%)',
+          background: 'radial-gradient(circle, rgba(255,183,77,0.32) 0%, rgba(255,152,64,0.14) 30%, transparent 72%)',
           filter: 'blur(24px)', pointerEvents: 'none',
           animation: isPlaying ? 'candle-glow 4.5s ease-in-out infinite' : 'none',
         }}
       />
 
-      {/* Mandala backdrop — warm-tinted geometric sacred pattern
-          Source PNG has been cleaned of baked-in center text via 12-fold rotational
-          median (see /app/scripts/clean-mandala.md). No CSS mask needed anymore. */}
-      <img
-        src={mandalaBackdrop}
-        alt=""
-        aria-hidden="true"
-        data-testid="candle-mandala-backdrop"
-        style={{
-          position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-          width: 620, height: 'auto',
-          opacity: 0.72, mixBlendMode: 'screen',
-          filter: 'sepia(0.5) hue-rotate(-15deg) saturate(1.5) brightness(1.1) drop-shadow(0 0 40px rgba(255,183,77,0.5))',
-          animation: isPlaying ? 'candle-mandala-spin 90s linear infinite' : 'none',
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* Candle scene (SVG) */}
+      {/* Candle scene (SVG) — centered on top of the mandala */}
       <svg
         data-testid="candle-svg"
         viewBox="0 0 260 460"
         style={{
           position: 'absolute', left: '50%', top: '54%', transform: 'translate(-50%, -50%)',
-          width: 260, filter: 'drop-shadow(0 26px 32px rgba(0,0,0,0.55))', pointerEvents: 'none',
+          width: 340, filter: 'drop-shadow(0 30px 40px rgba(0,0,0,0.65))', pointerEvents: 'none',
         }}
         aria-hidden="true"
       >
         <defs>
-          {/* Candle body — soft ivory to warm shadow */}
           <linearGradient id="candle-body" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#5A4A38" />
             <stop offset="18%" stopColor="#D8C8AE" />
@@ -178,7 +202,7 @@ export const CandleFlame = ({ isPlaying }) => {
       {/* Soft instruction (bottom, non-overlapping with header) */}
       <p style={{
         position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-        color: 'rgba(224,242,241,0.55)', fontSize: 12, fontWeight: 500,
+        color: 'rgba(224,242,241,0.7)', fontSize: 12, fontWeight: 500,
         letterSpacing: 1, textAlign: 'center', maxWidth: 280, margin: 0,
         fontStyle: 'italic',
       }}>
@@ -196,8 +220,8 @@ export const CandleFlame = ({ isPlaying }) => {
           50%      { opacity: 1;    transform: translate(-50%, -50%) scale(1.06); }
         }
         @keyframes candle-mandala-spin {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to   { transform: translate(-50%, -50%) rotate(360deg); }
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
         }
         @keyframes candle-spark {
           0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
