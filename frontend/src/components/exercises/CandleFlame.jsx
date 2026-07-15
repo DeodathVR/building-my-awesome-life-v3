@@ -106,7 +106,7 @@ export const CandleFlame = ({ isPlaying }) => {
           mixBlendMode: 'screen',
         }}
       >
-        {/* Static candle body (wax + drips) */}
+        {/* Static candle body (wick + wax pool + wax body + drips) */}
         <img
           src={candleBodyLayer}
           alt=""
@@ -116,11 +116,11 @@ export const CandleFlame = ({ isPlaying }) => {
             position: 'absolute',
             left: 0,
             width: '100%',
-            top: '38%',
-            height: '62%',
+            top: '31.6%',
+            height: '68.4%',
           }}
         />
-        {/* Animated flame layer (flame + wick tip + halo + tiny sparks) */}
+        {/* Animated flame layer (flame only — no wick, no wax pool) */}
         <img
           src={candleFlameLayer}
           alt=""
@@ -131,8 +131,10 @@ export const CandleFlame = ({ isPlaying }) => {
             left: 0,
             width: '100%',
             top: 0,
-            height: '42.27%',
-            transformOrigin: '50% 92%', // pivot near the wick base
+            height: '34.16%',
+            // Pivot right at the wick tip (bottom-center of the flame layer) so
+            // rotation looks like the flame swaying atop the wick, not floating.
+            transformOrigin: '50% 96%',
             animation: isPlaying
               ? 'candle-flame-flicker 3s ease-in-out infinite'
               : 'none',
