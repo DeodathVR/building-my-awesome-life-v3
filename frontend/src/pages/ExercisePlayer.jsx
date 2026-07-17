@@ -20,8 +20,8 @@ const exerciseDetails = {
     'flower-observation': {
         title: 'Flower Observation',
         defaultDuration: 5,
-        hasPalettes: true,
-        theme: 'default'
+        hasPalettes: false,
+        theme: 'warm-cream'
     },
     'expanding-circle': {
         title: 'Circle Concentration',
@@ -69,6 +69,14 @@ const themeStyles = {
         timerText: 'text-slate-800',
         subText: 'text-slate-600',
         backBtnBg: 'bg-white/60 hover:bg-white/80 text-slate-800',
+    },
+    'warm-cream': {
+        pageBg: 'radial-gradient(ellipse at 50% 45%, #FFF4E2 0%, #FBE8D6 30%, #F4D5C0 62%, #ECBFAC 100%)',
+        titleColor: '#3A2A1F',
+        controlCard: 'bg-white/45 backdrop-blur-md border-white/60',
+        timerText: 'text-stone-800',
+        subText: 'text-stone-600',
+        backBtnBg: 'bg-white/60 hover:bg-white/80 text-stone-800',
     },
 };
 
