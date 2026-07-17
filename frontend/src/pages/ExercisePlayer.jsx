@@ -39,7 +39,7 @@ const exerciseDetails = {
         title: 'Breath Counter',
         defaultDuration: 5,
         hasPalettes: false,
-        theme: 'default'
+        theme: 'pastel'
     }
 };
 

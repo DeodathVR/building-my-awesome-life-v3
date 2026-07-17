@@ -1,217 +1,213 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import breathScene from '@/assets/breath-scene.png';
+
+/**
+ * Breath Counter — box breathing (4-4-4-4).
+ *   Breathe In (4s) → Hold (4s) → Breathe Out (4s) → Hold (4s)  ⇒  16s cycle
+ *
+ * The scene is a photorealistic Nano-Banana sacred-geometry composition used as
+ * the full-page background. The central sphere in the image is static; a subtle
+ * animated glow overlay + phase cue at the top guide the breath.
+ */
+
+const PHASES = [
+    { key: 'inhale',    label: 'Breathe In',  seconds: 4 },
+    { key: 'hold-in',   label: 'Hold',        seconds: 4 },
+    { key: 'exhale',    label: 'Breathe Out', seconds: 4 },
+    { key: 'hold-out',  label: 'Hold',        seconds: 4 },
+];
+const CYCLE_MS = PHASES.reduce((a, p) => a + p.seconds * 1000, 0);
+
+const phaseAt = (elapsedMs) => {
+    let t = elapsedMs % CYCLE_MS;
+    for (let i = 0; i < PHASES.length; i++) {
+        const dur = PHASES[i].seconds * 1000;
+        if (t < dur) {
+            return { index: i, phase: PHASES[i], elapsedInPhase: t };
+        }
+        t -= dur;
+    }
+    return { index: 0, phase: PHASES[0], elapsedInPhase: 0 };
+};
 
 export const BreathCounter = ({ isPlaying }) => {
-    const [breathCount, setBreathCount] = useState(0);
-    const [phase, setPhase] = useState('inhale');
-    const [scale, setScale] = useState(0.5);
-    const [textOpacity, setTextOpacity] = useState(1);
-    const [displayText, setDisplayText] = useState('Breathe In');
-    const [displayDuration, setDisplayDuration] = useState('4 seconds');
-    const lastPhaseRef = useRef('inhale');
-    const cycleCountRef = useRef(0);
-    const animationRef = useRef(null);
-    
+    const [phaseIndex, setPhaseIndex] = useState(0);
+    const [countdown, setCountdown] = useState(PHASES[0].seconds);
+    const [cycleCount, setCycleCount] = useState(0);
+    // sphereScale drives the animated glow overlay (grow on inhale, shrink on exhale)
+    const [sphereScale, setSphereScale] = useState(0.85);
+
+    const startRef = useRef(null);
+    const rafRef = useRef(null);
+
     useEffect(() => {
-        // Reset everything when not playing
         if (!isPlaying) {
-            setBreathCount(0);
-            setPhase('inhale');
-            setScale(0.5);
-            setTextOpacity(1);
-            setDisplayText('Breathe In');
-            setDisplayDuration('4 seconds');
-            lastPhaseRef.current = 'inhale';
-            cycleCountRef.current = 0;
-            
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
-                animationRef.current = null;
-            }
+            setPhaseIndex(0);
+            setCountdown(PHASES[0].seconds);
+            setCycleCount(0);
+            setSphereScale(0.85);
+            startRef.current = null;
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
             return;
         }
-        
-        // Breathing pattern: 4s inhale, 2s hold, 4s exhale, 2s hold = 12s cycle
-        const phaseDurations = {
-            inhale: 4000,
-            'hold-in': 2000,
-            exhale: 4000,
-            'hold-out': 2000
-        };
-        
-        const totalCycle = 12000;
-        const cycleStart = Date.now();
-        
-        // Easing function for smoother scale transitions
+
+        startRef.current = performance.now();
+        let lastCycle = 0;
+
         const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
-        
-        const animate = () => {
-            const elapsed = Date.now() - cycleStart;
-            const cycleTime = elapsed % totalCycle;
-            const currentCycleNumber = Math.floor(elapsed / totalCycle);
-            
-            let newPhase;
-            let newScale;
-            
-            // Determine current phase with smooth easing
-            if (cycleTime < phaseDurations.inhale) {
-                newPhase = 'inhale';
-                const progress = cycleTime / phaseDurations.inhale;
-                const easedProgress = easeInOutSine(progress);
-                newScale = 0.5 + easedProgress * 0.5;
-            } else if (cycleTime < phaseDurations.inhale + phaseDurations['hold-in']) {
-                newPhase = 'hold-in';
-                newScale = 1;
-            } else if (cycleTime < phaseDurations.inhale + phaseDurations['hold-in'] + phaseDurations.exhale) {
-                newPhase = 'exhale';
-                const progress = (cycleTime - phaseDurations.inhale - phaseDurations['hold-in']) / phaseDurations.exhale;
-                const easedProgress = easeInOutSine(progress);
-                newScale = 1 - easedProgress * 0.5;
-            } else {
-                newPhase = 'hold-out';
-                newScale = 0.5;
+
+        const tick = () => {
+            const now = performance.now();
+            const elapsed = now - startRef.current;
+            const { index, phase, elapsedInPhase } = phaseAt(elapsed);
+            const secondsLeft = Math.max(1, Math.ceil((phase.seconds * 1000 - elapsedInPhase) / 1000));
+
+            setPhaseIndex(index);
+            setCountdown(secondsLeft);
+
+            // Sphere breathing overlay scale
+            const p = elapsedInPhase / (phase.seconds * 1000);
+            let s;
+            if (phase.key === 'inhale')      s = 0.85 + easeInOutSine(p) * 0.25;
+            else if (phase.key === 'hold-in')  s = 1.10;
+            else if (phase.key === 'exhale') s = 1.10 - easeInOutSine(p) * 0.25;
+            else /* hold-out */              s = 0.85;
+            setSphereScale(s);
+
+            const currentCycle = Math.floor(elapsed / CYCLE_MS);
+            if (currentCycle !== lastCycle) {
+                lastCycle = currentCycle;
+                setCycleCount(currentCycle);
             }
-            
-            setScale(newScale);
-            
-            // Handle phase transitions with fade
-            if (newPhase !== lastPhaseRef.current) {
-                // Fade out
-                setTextOpacity(0);
-                
-                // After fade out, update text and fade in
-                setTimeout(() => {
-                    setPhase(newPhase);
-                    switch(newPhase) {
-                        case 'inhale':
-                            setDisplayText('Breathe In');
-                            setDisplayDuration('4 seconds');
-                            break;
-                        case 'hold-in':
-                            setDisplayText('Hold');
-                            setDisplayDuration('2 seconds');
-                            break;
-                        case 'exhale':
-                            setDisplayText('Breathe Out');
-                            setDisplayDuration('4 seconds');
-                            break;
-                        case 'hold-out':
-                            setDisplayText('Hold');
-                            setDisplayDuration('2 seconds');
-                            break;
-                        default:
-                            break;
-                    }
-                    // Fade in
-                    setTimeout(() => setTextOpacity(1), 50);
-                }, 300);
-                
-                lastPhaseRef.current = newPhase;
-            }
-            
-            // Count completed breath cycles - only increment when entering a new cycle
-            if (currentCycleNumber > cycleCountRef.current) {
-                cycleCountRef.current = currentCycleNumber;
-                setBreathCount(currentCycleNumber);
-            }
-            
-            animationRef.current = requestAnimationFrame(animate);
+
+            rafRef.current = requestAnimationFrame(tick);
         };
-        
-        animationRef.current = requestAnimationFrame(animate);
-        
-        return () => {
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
-                animationRef.current = null;
-            }
-        };
+        rafRef.current = requestAnimationFrame(tick);
+        return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
     }, [isPlaying]);
-    
-    // Get circle style - static when not playing, animated when playing
-    const getCircleStyle = () => {
-        const hue1 = 174; // primary (teal)
-        const hue2 = 162; // secondary (sage)
-        const hue3 = 180; // accent (calm teal)
-        
-        const normalizedScale = (scale - 0.5) * 2; // 0 to 1
-        
-        return {
-            width: `${scale * 350}px`,
-            height: `${scale * 350}px`,
-            background: `radial-gradient(circle at 30% 30%, 
-                hsl(${hue1} 43% ${55 + normalizedScale * 10}% / 0.8), 
-                hsl(${hue2} 20% ${60 + normalizedScale * 5}% / 0.7), 
-                hsl(${hue3} 18% ${55 + normalizedScale * 10}% / 0.6))`,
-            boxShadow: `0 0 ${scale * 60}px hsl(174 43% 51% / ${0.3 + normalizedScale * 0.2})`,
-            transition: isPlaying ? 'background 0.8s ease-in-out, box-shadow 0.5s ease-in-out' : 'none'
-        };
-    };
-    
+
+    const currentPhase = PHASES[phaseIndex];
+
     return (
-        <div className="relative w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-background via-primary/5 to-background">
-            {/* Breath Count */}
-            <div className="absolute top-20 text-center">
-                <div className="text-6xl font-serif text-foreground mb-2 transition-all duration-500">
-                    {breathCount}
-                </div>
-                <div className="text-sm text-muted-foreground uppercase tracking-wider">
-                    Breath Cycles
-                </div>
-            </div>
-            
-            {/* Main breathing circle */}
-            <div className="relative flex items-center justify-center">
-                {/* Outer guide ring */}
-                <div className="absolute w-[400px] h-[400px] border-2 border-primary/20 rounded-full" />
-                
-                {/* Animated breathing circle with smooth transitions */}
+        <div
+            className="breath-scene"
+            data-testid="breath-scene"
+            style={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                overflow: 'hidden',
+                backgroundColor: '#EFE6E6',
+                backgroundImage: `url(${breathScene})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center center',
+                backgroundRepeat: 'no-repeat',
+            }}
+        >
+            {/* Soft top vignette to guarantee readable header/phase text */}
+            <div
+                aria-hidden="true"
+                style={{
+                    position: 'absolute', inset: 0, pointerEvents: 'none',
+                    background:
+                        'linear-gradient(180deg, rgba(255,246,235,0.55) 0%, rgba(255,246,235,0) 22%, rgba(255,246,235,0) 70%, rgba(255,246,235,0.55) 100%)',
+                }}
+            />
+
+            {/* Phase cue — italic teal, sits below the app title */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 72,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 10,
+                    textAlign: 'center',
+                    color: '#3E9C8C',
+                }}
+            >
                 <div
-                    className="absolute rounded-full backdrop-blur-sm shadow-2xl"
-                    style={getCircleStyle()}
+                    data-testid="breath-phase-label"
+                    style={{
+                        fontSize: 26,
+                        fontStyle: 'italic',
+                        fontWeight: 400,
+                        letterSpacing: 0.5,
+                        transition: 'opacity 300ms ease',
+                    }}
                 >
-                    {/* Inner glow */}
-                    <div className="absolute inset-8 rounded-full bg-primary-light/30 blur-2xl transition-all duration-700" />
+                    {currentPhase.label}
                 </div>
-                
-                {/* Phase text with fade transition */}
-                <div 
-                    className="relative text-center z-10 transition-opacity duration-300 ease-in-out"
-                    style={{ opacity: textOpacity }}
+                <div
+                    data-testid="breath-phase-countdown"
+                    style={{ fontSize: 48, fontWeight: 300, marginTop: 6, color: '#2C6D62' }}
                 >
-                    <div className="text-3xl font-serif font-light text-foreground">
-                        {displayText}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-2">
-                        {displayDuration}
-                    </div>
+                    {countdown}
                 </div>
             </div>
-            
-            {/* Progress indicator dots with smooth transitions */}
-            <div className="absolute bottom-20 flex gap-3">
-                {['inhale', 'hold-in', 'exhale', 'hold-out'].map((p) => (
-                    <div
-                        key={p}
-                        className={`w-3 h-3 rounded-full transition-all duration-500 ease-in-out ${
-                            phase === p 
-                                ? 'bg-primary scale-125 shadow-lg shadow-primary/30' 
-                                : 'bg-muted/50'
-                        }`}
-                    />
-                ))}
+
+            {/* Cycle counter — bottom left, small */}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: 32,
+                    transform: 'translateY(-50%)',
+                    textAlign: 'right',
+                    color: 'rgba(60,80,90,0.65)',
+                }}
+                data-testid="breath-cycle-count"
+            >
+                <div style={{ fontSize: 48, fontWeight: 300, color: '#3E9C8C' }}>{cycleCount}</div>
+                <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>Cycles</div>
             </div>
-            
-            {/* Ambient particles */}
-            <div className="absolute inset-0 pointer-events-none">
-                {[...Array(12)].map((_, i) => (
-                    <div
-                        key={i}
-                        className="absolute w-2 h-2 bg-primary/20 rounded-full animate-float"
+
+            {/* Sphere glow overlay — pulses with the breath, right over the sphere in the image */}
+            <div
+                aria-hidden="true"
+                style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: '22vmin',
+                    height: '22vmin',
+                    minWidth: 180,
+                    minHeight: 180,
+                    borderRadius: '50%',
+                    transform: `translate(-50%, -50%) scale(${sphereScale})`,
+                    background:
+                        'radial-gradient(circle at 40% 38%, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 40%, rgba(126,200,184,0.35) 66%, rgba(255,205,140,0.30) 80%, rgba(255,205,140,0) 100%)',
+                    filter: 'blur(6px)',
+                    transition: 'transform 120ms linear',
+                    pointerEvents: 'none',
+                    mixBlendMode: 'screen',
+                }}
+                data-testid="breath-sphere-glow"
+            />
+
+            {/* Phase progress dots */}
+            <div
+                style={{
+                    position: 'absolute',
+                    bottom: 20,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    display: 'flex',
+                    gap: 10,
+                }}
+                data-testid="breath-phase-dots"
+            >
+                {PHASES.map((p, i) => (
+                    <span
+                        key={p.key}
                         style={{
-                            left: `${10 + i * 7}%`,
-                            top: `${15 + (i % 4) * 20}%`,
-                            animationDelay: `${i * 0.25}s`,
-                            animationDuration: `${4 + i * 0.3}s`
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            background: i === phaseIndex ? '#3E9C8C' : 'rgba(62,156,140,0.28)',
+                            boxShadow: i === phaseIndex ? '0 0 8px rgba(62,156,140,0.7)' : 'none',
+                            transition: 'background 240ms ease, box-shadow 240ms ease',
                         }}
                     />
                 ))}
