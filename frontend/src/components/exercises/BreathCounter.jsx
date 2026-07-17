@@ -32,10 +32,10 @@ const phaseAt = (elapsedMs) => {
 
 export const BreathCounter = ({ isPlaying }) => {
     const [phaseIndex, setPhaseIndex] = useState(0);
-    const [countdown, setCountdown] = useState(PHASES[0].seconds);
+    const [countdown, setCountdown] = useState(1);
     const [cycleCount, setCycleCount] = useState(0);
     // sphereScale drives the animated glow overlay (grow on inhale, shrink on exhale)
-    const [sphereScale, setSphereScale] = useState(0.85);
+    const [sphereScale, setSphereScale] = useState(0.65);
 
     const startRef = useRef(null);
     const rafRef = useRef(null);
@@ -43,9 +43,9 @@ export const BreathCounter = ({ isPlaying }) => {
     useEffect(() => {
         if (!isPlaying) {
             setPhaseIndex(0);
-            setCountdown(PHASES[0].seconds);
+            setCountdown(1);
             setCycleCount(0);
-            setSphereScale(0.85);
+            setSphereScale(0.65);
             startRef.current = null;
             if (rafRef.current) cancelAnimationFrame(rafRef.current);
             rafRef.current = null;
@@ -61,18 +61,30 @@ export const BreathCounter = ({ isPlaying }) => {
             const now = performance.now();
             const elapsed = now - startRef.current;
             const { index, phase, elapsedInPhase } = phaseAt(elapsed);
-            const secondsLeft = Math.max(1, Math.ceil((phase.seconds * 1000 - elapsedInPhase) / 1000));
+
+            // Countdown values:
+            //   Breathe In : 1 → 4 (filling up, intuitive)
+            //   Hold / Out : 4 → 1 (time remaining until next phase)
+            const secondsElapsed = Math.min(
+                phase.seconds,
+                Math.floor(elapsedInPhase / 1000) + 1
+            );
+            const secondsLeft = Math.max(
+                1,
+                Math.ceil((phase.seconds * 1000 - elapsedInPhase) / 1000)
+            );
+            const displayCount = phase.key === 'inhale' ? secondsElapsed : secondsLeft;
 
             setPhaseIndex(index);
-            setCountdown(secondsLeft);
+            setCountdown(displayCount);
 
-            // Sphere breathing overlay scale
+            // Sphere breathing overlay scale — big, visible movement.
             const p = elapsedInPhase / (phase.seconds * 1000);
             let s;
-            if (phase.key === 'inhale')      s = 0.85 + easeInOutSine(p) * 0.25;
-            else if (phase.key === 'hold-in')  s = 1.10;
-            else if (phase.key === 'exhale') s = 1.10 - easeInOutSine(p) * 0.25;
-            else /* hold-out */              s = 0.85;
+            if (phase.key === 'inhale')       s = 0.65 + easeInOutSine(p) * 0.55; // 0.65 → 1.20
+            else if (phase.key === 'hold-in') s = 1.20;                            // full, held
+            else if (phase.key === 'exhale')  s = 1.20 - easeInOutSine(p) * 0.55;  // 1.20 → 0.65
+            else /* hold-out */               s = 0.65;                            // empty, held
             setSphereScale(s);
 
             const currentCycle = Math.floor(elapsed / CYCLE_MS);
@@ -115,7 +127,7 @@ export const BreathCounter = ({ isPlaying }) => {
                 }}
             />
 
-            {/* Phase cue — italic teal, sits below the app title */}
+            {/* Phase cue (top) — italic teal, sits below the app title */}
             <div
                 style={{
                     position: 'absolute',
@@ -130,7 +142,7 @@ export const BreathCounter = ({ isPlaying }) => {
                 <div
                     data-testid="breath-phase-label"
                     style={{
-                        fontSize: 26,
+                        fontSize: 28,
                         fontStyle: 'italic',
                         fontWeight: 400,
                         letterSpacing: 0.5,
@@ -139,12 +151,29 @@ export const BreathCounter = ({ isPlaying }) => {
                 >
                     {currentPhase.label}
                 </div>
-                <div
-                    data-testid="breath-phase-countdown"
-                    style={{ fontSize: 48, fontWeight: 300, marginTop: 6, color: '#2C6D62' }}
-                >
-                    {countdown}
-                </div>
+            </div>
+
+            {/* Countdown number — CENTER of screen, directly over the sphere */}
+            <div
+                data-testid="breath-phase-countdown"
+                style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 10,
+                    fontSize: 108,
+                    fontWeight: 200,
+                    fontFamily: 'serif',
+                    color: '#FFFFFF',
+                    textShadow:
+                        '0 0 24px rgba(62,156,140,0.9), 0 4px 20px rgba(0,0,0,0.35), 0 0 2px rgba(255,255,255,0.9)',
+                    lineHeight: 1,
+                    letterSpacing: -2,
+                    pointerEvents: 'none',
+                }}
+            >
+                {countdown}
             </div>
 
             {/* Cycle counter — bottom left, small */}
@@ -163,28 +192,58 @@ export const BreathCounter = ({ isPlaying }) => {
                 <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>Cycles</div>
             </div>
 
-            {/* Sphere glow overlay — pulses with the breath, right over the sphere in the image */}
+            {/* Animated breathing sphere overlay — grows on inhale, shrinks on exhale.
+                Sits directly on top of the sphere baked into the background image so
+                the composition still reads correctly, but the size change is very visible. */}
             <div
                 aria-hidden="true"
                 style={{
                     position: 'absolute',
                     left: '50%',
                     top: '50%',
-                    width: '22vmin',
-                    height: '22vmin',
-                    minWidth: 180,
-                    minHeight: 180,
+                    width: '30vmin',
+                    height: '30vmin',
+                    minWidth: 260,
+                    minHeight: 260,
                     borderRadius: '50%',
                     transform: `translate(-50%, -50%) scale(${sphereScale})`,
                     background:
-                        'radial-gradient(circle at 40% 38%, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 40%, rgba(126,200,184,0.35) 66%, rgba(255,205,140,0.30) 80%, rgba(255,205,140,0) 100%)',
-                    filter: 'blur(6px)',
-                    transition: 'transform 120ms linear',
+                        'radial-gradient(circle at 40% 38%, #EAF6F3 0%, #A6D6C9 18%, #4FA79A 55%, #2C5C56 82%, #1B3B3A 100%)',
+                    boxShadow:
+                        '0 0 60px rgba(126,200,184,0.55), 0 0 140px rgba(255,203,150,0.45), inset 0 0 40px rgba(255,255,255,0.28)',
+                    transition: 'transform 90ms linear',
                     pointerEvents: 'none',
-                    mixBlendMode: 'screen',
                 }}
-                data-testid="breath-sphere-glow"
-            />
+                data-testid="breath-sphere"
+            >
+                {/* Warm rim halo — matches the gold crescent in the background */}
+                <div
+                    aria-hidden="true"
+                    style={{
+                        position: 'absolute',
+                        inset: -18,
+                        borderRadius: '50%',
+                        background:
+                            'radial-gradient(circle, rgba(255,205,140,0) 55%, rgba(255,205,140,0.55) 68%, rgba(255,205,140,0) 82%)',
+                        filter: 'blur(6px)',
+                    }}
+                />
+                {/* Focus dot — always centered on the sphere */}
+                <div
+                    aria-hidden="true"
+                    style={{
+                        position: 'absolute',
+                        left: '50%',
+                        top: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: 14,
+                        height: 14,
+                        borderRadius: '50%',
+                        background: '#0F1B23',
+                        boxShadow: '0 0 6px rgba(0,0,0,0.35)',
+                    }}
+                />
+            </div>
 
             {/* Phase progress dots */}
             <div
