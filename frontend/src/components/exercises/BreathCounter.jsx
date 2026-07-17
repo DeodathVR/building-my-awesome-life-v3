@@ -127,7 +127,7 @@ export const BreathCounter = ({ isPlaying }) => {
                 }}
             />
 
-            {/* Phase cue (top) — italic teal, sits below the app title */}
+            {/* Cycle counter — TOP center, below the app title. Prominent big number. */}
             <div
                 style={{
                     position: 'absolute',
@@ -136,67 +136,39 @@ export const BreathCounter = ({ isPlaying }) => {
                     transform: 'translateX(-50%)',
                     zIndex: 10,
                     textAlign: 'center',
-                    color: '#3E9C8C',
-                }}
-            >
-                <div
-                    data-testid="breath-phase-label"
-                    style={{
-                        fontSize: 28,
-                        fontStyle: 'italic',
-                        fontWeight: 400,
-                        letterSpacing: 0.5,
-                        transition: 'opacity 300ms ease',
-                    }}
-                >
-                    {currentPhase.label}
-                </div>
-            </div>
-
-            {/* Countdown number — CENTER of screen, directly over the sphere */}
-            <div
-                data-testid="breath-phase-countdown"
-                style={{
-                    position: 'absolute',
-                    left: '50%',
-                    top: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    zIndex: 10,
-                    fontSize: 108,
-                    fontWeight: 200,
-                    fontFamily: 'serif',
-                    color: '#FFFFFF',
-                    textShadow:
-                        '0 0 24px rgba(62,156,140,0.9), 0 4px 20px rgba(0,0,0,0.35), 0 0 2px rgba(255,255,255,0.9)',
-                    lineHeight: 1,
-                    letterSpacing: -2,
-                    pointerEvents: 'none',
-                }}
-            >
-                {countdown}
-            </div>
-
-            {/* Cycle counter — bottom left, small */}
-            <div
-                style={{
-                    position: 'absolute',
-                    top: '50%',
-                    right: 32,
-                    transform: 'translateY(-50%)',
-                    textAlign: 'right',
-                    color: 'rgba(60,80,90,0.65)',
+                    color: '#2C5C56',
                 }}
                 data-testid="breath-cycle-count"
             >
-                <div style={{ fontSize: 48, fontWeight: 300, color: '#3E9C8C' }}>{cycleCount}</div>
-                <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>Cycles</div>
+                <div
+                    style={{
+                        fontSize: 56,
+                        fontFamily: 'serif',
+                        fontWeight: 300,
+                        lineHeight: 1,
+                        color: '#2C5C56',
+                    }}
+                >
+                    {cycleCount}
+                </div>
+                <div
+                    style={{
+                        marginTop: 6,
+                        fontSize: 11,
+                        letterSpacing: 3,
+                        textTransform: 'uppercase',
+                        color: 'rgba(44,92,86,0.65)',
+                    }}
+                >
+                    Breath Cycles
+                </div>
             </div>
 
             {/* Animated breathing sphere overlay — grows on inhale, shrinks on exhale.
                 Sits directly on top of the sphere baked into the background image so
-                the composition still reads correctly, but the size change is very visible. */}
+                the composition still reads correctly, but the size change is very visible.
+                Phase name + running seconds live INSIDE the sphere. */}
             <div
-                aria-hidden="true"
                 style={{
                     position: 'absolute',
                     left: '50%',
@@ -213,6 +185,10 @@ export const BreathCounter = ({ isPlaying }) => {
                         '0 0 60px rgba(126,200,184,0.55), 0 0 140px rgba(255,203,150,0.45), inset 0 0 40px rgba(255,255,255,0.28)',
                     transition: 'transform 90ms linear',
                     pointerEvents: 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                 }}
                 data-testid="breath-sphere"
             >
@@ -228,21 +204,36 @@ export const BreathCounter = ({ isPlaying }) => {
                         filter: 'blur(6px)',
                     }}
                 />
-                {/* Focus dot — always centered on the sphere */}
+                {/* Phase name — big serif */}
                 <div
-                    aria-hidden="true"
+                    data-testid="breath-phase-label"
                     style={{
-                        position: 'absolute',
-                        left: '50%',
-                        top: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: 14,
-                        height: 14,
-                        borderRadius: '50%',
-                        background: '#0F1B23',
-                        boxShadow: '0 0 6px rgba(0,0,0,0.35)',
+                        position: 'relative',
+                        fontSize: 34,
+                        fontFamily: 'serif',
+                        fontWeight: 300,
+                        color: '#FFFFFF',
+                        textShadow: '0 2px 12px rgba(0,0,0,0.35)',
+                        letterSpacing: 0.5,
+                        transition: 'opacity 260ms ease',
                     }}
-                />
+                >
+                    {currentPhase.label}
+                </div>
+                {/* Running seconds count — inhale 1→4, exhale/holds 4→1 */}
+                <div
+                    data-testid="breath-phase-countdown"
+                    style={{
+                        position: 'relative',
+                        marginTop: 8,
+                        fontSize: 15,
+                        fontStyle: 'italic',
+                        color: 'rgba(234,246,243,0.85)',
+                        letterSpacing: 0.4,
+                    }}
+                >
+                    {countdown} {countdown === 1 ? 'second' : 'seconds'}
+                </div>
             </div>
 
             {/* Phase progress dots */}
