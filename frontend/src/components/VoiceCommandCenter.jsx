@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Mic, MicOff, X, HelpCircle, AlertTriangle } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { useApp } from '../context/AppContext';
@@ -7,6 +8,7 @@ import useVoiceRecognition from '../hooks/useVoiceRecognition';
 import { toast } from 'sonner';
 
 const VoiceCommandCenter = () => {
+  const location = useLocation();
   const { habits, createHabit, logHabit, chatWithCoach } = useApp();
   const { 
     isListening, 
@@ -138,6 +140,10 @@ const VoiceCommandCenter = () => {
       startListening();
     }
   };
+
+  // Hide the floating mic on immersive exercise pages so nothing floats over
+  // the meditative scene.
+  if (location.pathname.startsWith('/exercise/')) return null;
 
   return (
     <>
