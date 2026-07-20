@@ -20,7 +20,7 @@ const exerciseDetails = {
     'flower-observation': {
         title: 'Flower Observation',
         defaultDuration: 5,
-        hasPalettes: false,
+        hasPalettes: true,
         theme: 'warm-cream'
     },
     'expanding-circle': {
@@ -241,8 +241,8 @@ export const ExercisePlayer = () => {
                         showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     }`}
                 >
-                    <Card className="p-4 bg-card/95 backdrop-blur-md border-border shadow-xl">
-                        <p className="text-sm font-medium text-foreground mb-3">Choose Color Theme</p>
+                    <Card className="p-4 bg-white/85 backdrop-blur-md border-white/60 shadow-xl">
+                        <p className="text-sm font-medium text-stone-700 mb-3">Choose Color Theme</p>
                         <div className="flex flex-col gap-2">
                             {Object.entries(flowerPalettes).map(([key, palette]) => (
                                 <button
@@ -251,13 +251,16 @@ export const ExercisePlayer = () => {
                                         setSelectedPalette(key);
                                         setShowPaletteSelector(false);
                                     }}
-                                    className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-200 hover:bg-muted ${
-                                        selectedPalette === key ? 'bg-muted ring-2 ring-primary' : ''
+                                    className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-200 hover:bg-white/70 ${
+                                        selectedPalette === key ? 'bg-white/80 ring-2 ring-stone-400' : ''
                                     }`}
                                     data-testid={`palette-${key}`}
                                 >
-                                    <div className={`w-8 h-8 rounded-full ${palette.preview}`} />
-                                    <span className="text-sm text-foreground">{palette.name}</span>
+                                    <div
+                                        className="w-8 h-8 rounded-full shadow-inner"
+                                        style={{ background: palette.swatch }}
+                                    />
+                                    <span className="text-sm text-stone-800">{palette.name}</span>
                                 </button>
                             ))}
                         </div>
