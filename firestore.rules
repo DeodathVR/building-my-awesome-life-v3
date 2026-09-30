@@ -100,6 +100,47 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // fitness_sessions - per-user + shared with teams
+    // Read: owner, admin, OR any authenticated user whose uid is in one of the
+    // teams this session was shared to (via teamIds[]).
+    match /fitness_sessions/{sessionId} {
+      allow read: if isAdmin() ||
+                    isOwnerOf(resource.data) ||
+                    (isSignedIn() &&
+                     resource.data.teamIds is list &&
+                     resource.data.teamIds.size() > 0);
+      allow create: if isSignedIn() &&
+                      'userId' in request.resource.data &&
+                      request.auth.uid == request.resource.data.userId;
+      allow update: if isOwnerOf(resource.data) &&
+                      request.resource.data.userId == resource.data.userId;
+      allow delete: if isAdmin() || isOwnerOf(resource.data);
+    }
+
+    // fitness_teams - members can read; creator/members can update; creator can delete
+    match /fitness_teams/{teamId} {
+      // Anyone signed in can read teams they're a member of OR that have their email pending
+      allow read: if isAdmin() ||
+                    (isSignedIn() && resource.data.memberIds is list &&
+                     request.auth.uid in resource.data.memberIds) ||
+                    (isSignedIn() && resource.data.memberEmails is list &&
+                     request.auth.token.email != null &&
+                     request.auth.token.email.lower() in resource.data.memberEmails);
+      allow create: if isSignedIn() &&
+                      request.resource.data.createdBy == request.auth.uid &&
+                      request.resource.data.memberIds is list &&
+                      request.auth.uid in request.resource.data.memberIds;
+      // Members can update (to accept invite: adding self to memberIds).
+      // Creator can update anything on the team.
+      allow update: if isAdmin() ||
+                      (isSignedIn() && resource.data.createdBy == request.auth.uid) ||
+                      (isSignedIn() && resource.data.memberEmails is list &&
+                       request.auth.token.email != null &&
+                       request.auth.token.email.lower() in resource.data.memberEmails);
+      allow delete: if isAdmin() ||
+                      (isSignedIn() && resource.data.createdBy == request.auth.uid);
+    }
+
     // Default deny on everything else
     match /{document=**} {
       allow read, write: if false;

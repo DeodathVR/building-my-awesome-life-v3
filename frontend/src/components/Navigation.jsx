@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Target, Focus, BookOpen, Users, MessageCircle, Moon, Sun, Menu, X, Sparkles, Wand2, Gamepad2, Zap, HelpCircle, CreditCard, ShieldCheck, LogOut } from 'lucide-react';
+import { LayoutDashboard, Target, Focus, BookOpen, Users, MessageCircle, Moon, Sun, Menu, X, Sparkles, Wand2, Gamepad2, Zap, HelpCircle, CreditCard, ShieldCheck, LogOut, Activity } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
@@ -20,6 +20,7 @@ const Navigation = () => {
       { path: homeHref, icon: LayoutDashboard, label: 'Home' },
       { path: '/habits', icon: Target, label: 'Habits', requiresAuth: true },
       { path: '/focus', icon: Focus, label: 'Focus', requiresAuth: true },
+      { path: '/fitness', icon: Activity, label: 'Fitness', requiresAuth: true },
       { path: '/concentration-games', icon: Gamepad2, label: 'Games' },
       { path: '/glow-up', icon: Zap, label: 'Glow Up' },
       { path: '/feed', icon: Sparkles, label: 'Feed' },

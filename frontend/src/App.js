@@ -16,6 +16,9 @@ import { ExercisePlayer } from "./pages/ExercisePlayer";
 import EducationPage from "./pages/EducationPage";
 import CommunityPage from "./pages/CommunityPage";
 import AICoachPage from "./pages/AICoachPage";
+import FitnessPage from "./pages/FitnessPage";
+import FitnessTrackPage from "./pages/FitnessTrackPage";
+import FitnessTeamsPage from "./pages/FitnessTeamsPage";
 import AwesomeFeedPage from "./pages/AwesomeFeedPage";
 import SuccessConspiracyPage from "./pages/SuccessConspiracyPage";
 import ConcentrationGamesPage from "./pages/ConcentrationGamesPage";
@@ -81,6 +84,9 @@ function App() {
             <Route path="/focus" element={<ProtectedRoute><AuthedLayout><Exercises /></AuthedLayout></ProtectedRoute>} />
             <Route path="/exercise/:exerciseId" element={<ProtectedRoute><AuthedLayout><ExercisePlayer /></AuthedLayout></ProtectedRoute>} />
             <Route path="/coach" element={<ProtectedRoute><AuthedLayout><AICoachPage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/fitness" element={<ProtectedRoute><AuthedLayout><FitnessPage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/fitness/track" element={<ProtectedRoute><AuthedLayout><FitnessTrackPage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/fitness/teams" element={<ProtectedRoute><AuthedLayout><FitnessTeamsPage /></AuthedLayout></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><AuthedLayout><AdminPage /></AuthedLayout></AdminRoute>} />
           </Routes>
           <CookieConsent />
