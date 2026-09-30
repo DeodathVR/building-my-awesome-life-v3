@@ -148,8 +148,78 @@ export function detectPersonalBest(newSession, previousSessions) {
 }
 
 // -----------------------------------------------------------------------------
-// Weekly aggregate
+// Kilometre splits
 // -----------------------------------------------------------------------------
+
+/**
+ * Compute per-kilometre splits from a GPS path.
+ * Walks the path accumulating distance and records the time it took to
+ * cross each 1 km boundary (linearly interpolating the crossing timestamp
+ * between the two GPS points that straddle it).
+ *
+ * Returns an array like:
+ *   [{ km: 1, timeSec: 342, paceMinPerKm: 5.7, partial: false }, ...]
+ * The final entry may be `partial: true` if the session didn't reach a
+ * whole km (its `km` value is the fractional distance in km).
+ */
+export function computeKmSplits(path) {
+  if (!Array.isArray(path) || path.length < 2) return [];
+  const splits = [];
+  let cumMeters = 0;
+  let nextBoundary = 1000;              // next km boundary to cross (metres)
+  let boundaryStartTime = path[0].t;    // time when the current km segment started
+
+  for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1];
+    const b = path[i];
+    const segMeters = haversineMeters(a, b);
+    if (segMeters <= 0) continue;
+
+    // Crossing zero or more km boundaries within this segment?
+    let segStartCum = cumMeters;
+    let segStartTime = a.t;
+    let segEndCum   = cumMeters + segMeters;
+
+    while (segEndCum >= nextBoundary) {
+      // Fraction of this segment where the boundary is crossed
+      const frac = (nextBoundary - segStartCum) / (segEndCum - segStartCum);
+      const crossTime = segStartTime + frac * (b.t - segStartTime);
+      const timeSec = Math.max(0.001, (crossTime - boundaryStartTime) / 1000);
+      const paceMinPerKm = (timeSec / 60);
+      splits.push({
+        km: Math.round(nextBoundary / 1000),
+        timeSec,
+        paceMinPerKm,
+        partial: false,
+      });
+      // Advance the segment window past this boundary so we can detect the
+      // next one within the same segment (rare on foot, but the math is safe).
+      segStartCum = nextBoundary;
+      segStartTime = crossTime;
+      boundaryStartTime = crossTime;
+      nextBoundary += 1000;
+    }
+
+    cumMeters = segEndCum;
+  }
+
+  // Optional partial trailing km
+  const lastBoundaryMeters = (splits.length) * 1000;
+  const trailing = cumMeters - lastBoundaryMeters;
+  if (trailing >= 100) {  // only if there's a meaningful trailing distance (≥100 m)
+    const lastPoint = path[path.length - 1];
+    const timeSec = Math.max(0.001, (lastPoint.t - boundaryStartTime) / 1000);
+    const paceMinPerKm = (timeSec / 60) / (trailing / 1000);
+    splits.push({
+      km: +(trailing / 1000).toFixed(2),   // e.g. 0.42
+      timeSec,
+      paceMinPerKm,
+      partial: true,
+    });
+  }
+  return splits;
+}
+
 
 /** Aggregate sessions from the last `days` days (default 7) into totals. */
 export function weeklyTotals(sessions, days = 7) {

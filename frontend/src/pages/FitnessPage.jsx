@@ -7,6 +7,7 @@ import { Play, Plus, Users, TrendingUp, Flame, MapPin, Award, ChevronRight } fro
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { RouteMap } from '../components/RouteMap';
+import { KmSplits } from '../components/KmSplits';
 import fitnessHero from '../assets/fitness-hero.png';
 import {
   ACTIVITY,
@@ -242,10 +243,11 @@ const SessionCard = ({ session }) => {
         </div>
       </div>
 
-      {/* GPS route preview */}
+      {/* GPS route preview + km splits */}
       {session.path && session.path.length > 1 && (
         <div className="px-4 pb-4">
           <RouteMap points={session.path} height={180} />
+          <KmSplits path={session.path} />
         </div>
       )}
 
