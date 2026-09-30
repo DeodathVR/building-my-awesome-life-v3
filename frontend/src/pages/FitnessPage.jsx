@@ -6,6 +6,7 @@ import {
 import { Play, Plus, Users, TrendingUp, Flame, MapPin, Award, ChevronRight } from 'lucide-react';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { RouteMap } from '../components/RouteMap';
 import fitnessHero from '../assets/fitness-hero.png';
 import {
   ACTIVITY,
@@ -214,8 +215,13 @@ const SessionCard = ({ session }) => {
           {act.emoji}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-medium">{act.label}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-medium truncate">
+              {session.name || act.label}
+            </h3>
+            {session.name && (
+              <span className="text-xs text-muted-foreground">· {act.label}</span>
+            )}
             {session.personalBest && (
               <span className="text-[10px] uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded" data-testid="pb-badge">
                 🏆 {session.personalBest.label}
@@ -235,6 +241,14 @@ const SessionCard = ({ session }) => {
           {session.note && <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{session.note}</p>}
         </div>
       </div>
+
+      {/* GPS route preview */}
+      {session.path && session.path.length > 1 && (
+        <div className="px-4 pb-4">
+          <RouteMap points={session.path} height={180} />
+        </div>
+      )}
+
       {session.photoURLs && session.photoURLs.length > 0 && (
         <div className="flex gap-1 px-4 pb-4 overflow-x-auto" data-testid="session-photos">
           {session.photoURLs.map((url, i) => (

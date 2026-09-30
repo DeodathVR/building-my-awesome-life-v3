@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { RouteMap } from '../components/RouteMap';
 import {
   ACTIVITY, classifyActivity, estimateCalories, haversineMeters, formatDuration,
   formatKm, formatPace, detectPersonalBest, compressImageToDataURL,
@@ -68,13 +69,14 @@ const LiveGPS = ({ user, onSaved }) => {
   const [duration, setDuration] = useState(0);        // seconds
   const [currentSpeed, setCurrentSpeed] = useState(0);// m/s
   const [audioCues, setAudioCues] = useState(() => localStorage.getItem(AUDIO_KEY) !== 'off');
+  const [path, setPath] = useState([]);               // [{lat, lng, t}] – reactive, drives the map
 
-  const pathRef = useRef([]);      // [{lat, lng, t}]
   const watchRef = useRef(null);
   const startRef = useRef(null);
   const pausedElapsedRef = useRef(0);
   const lastKmMilestoneRef = useRef(0);
   const timerRef = useRef(null);
+  const lastPointRef = useRef(null);   // for distance delta calc without needing a re-read of state
 
   // Timer
   useEffect(() => {
@@ -104,7 +106,8 @@ const LiveGPS = ({ user, onSaved }) => {
       setError('This browser does not support GPS. Use manual entry instead.');
       return;
     }
-    pathRef.current = [];
+    setPath([]);
+    lastPointRef.current = null;
     setDistance(0);
     setDuration(0);
     pausedElapsedRef.current = 0;
@@ -115,17 +118,18 @@ const LiveGPS = ({ user, onSaved }) => {
       (pos) => {
         const p = { lat: pos.coords.latitude, lng: pos.coords.longitude, t: Date.now() };
         setCurrentSpeed(pos.coords.speed || 0);
-        const path = pathRef.current;
-        if (path.length > 0) {
-          const last = path[path.length - 1];
+        const last = lastPointRef.current;
+        if (last) {
           const d = haversineMeters(last, p);
           // Filter noise: ignore jumps larger than 50m/s or accuracy > 40m
           if (d < 50 * ((p.t - last.t) / 1000 + 1) && (pos.coords.accuracy || 0) < 50) {
             setDistance((prev) => prev + d);
-            path.push(p);
+            lastPointRef.current = p;
+            setPath((prev) => [...prev, p]);
           }
         } else {
-          path.push(p);
+          lastPointRef.current = p;
+          setPath((prev) => [...prev, p]);
         }
       },
       (err) => {
@@ -204,6 +208,9 @@ const LiveGPS = ({ user, onSaved }) => {
         </div>
       </div>
 
+      {/* Live path map */}
+      <RouteMap points={path} live={status === 'running' || status === 'paused'} height={280} />
+
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 p-3 flex gap-2 items-start" data-testid="gps-error">
           <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
@@ -247,7 +254,7 @@ const LiveGPS = ({ user, onSaved }) => {
             distanceKm,
             durationSec: duration,
             activity: auto,
-            path: pathRef.current,
+            path,
           }}
           onSaved={onSaved}
         />
@@ -353,6 +360,7 @@ const Field = ({ label, children }) => (
 const SaveForm = ({ user, initial, onSaved, disabled }) => {
   const [weightKg, setWeightKg] = useState(() => Number(localStorage.getItem(WEIGHT_KEY)) || 70);
   const [note, setNote] = useState('');
+  const [name, setName] = useState(() => defaultSessionName(initial));
   const [photos, setPhotos] = useState([]); // dataURLs
   const [selectedTeams, setSelectedTeams] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -423,6 +431,7 @@ const SaveForm = ({ user, initial, onSaved, disabled }) => {
         userId: user.uid,
         userName: user.displayName || user.email || 'You',
         userPhotoURL: user.photoURL || null,
+        name: (name || '').trim() || defaultSessionName(initial),
         startedAt, endedAt,
         durationSec,
         distanceKm,
@@ -453,6 +462,19 @@ const SaveForm = ({ user, initial, onSaved, disabled }) => {
   return (
     <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
       <h2 className="font-serif text-lg">Save session</h2>
+
+      {/* Session name */}
+      <Field label="Session name">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={80}
+          placeholder="e.g. Morning Jog"
+          className="w-full px-3 py-2 rounded-lg border border-border bg-background"
+          data-testid="session-name-input"
+        />
+      </Field>
 
       {/* Summary */}
       <div className="grid grid-cols-4 gap-2 text-center py-2 border-y border-border">
@@ -542,6 +564,19 @@ const Summary = ({ label, value }) => (
     <p className="text-sm font-medium mt-0.5">{value}</p>
   </div>
 );
+
+// Suggest a session name from time-of-day + activity, e.g. "Morning Jog".
+function defaultSessionName(initial) {
+  const started = initial?.startedAtOverride || new Date();
+  const h = started.getHours();
+  const tod = h < 5 ? 'Late Night'
+    : h < 12 ? 'Morning'
+    : h < 17 ? 'Afternoon'
+    : h < 21 ? 'Evening'
+    : 'Night';
+  const label = (ACTIVITY[initial?.activity]?.label) || 'Session';
+  return `${tod} ${label}`;
+}
 
 // =============================================================================
 // Text-to-speech helper (silently no-op on unsupported browsers)
