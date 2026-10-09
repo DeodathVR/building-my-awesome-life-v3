@@ -100,7 +100,7 @@ const MemberList = ({ p, user, testBase }) => (
               {m.done && <CheckCircle2 className="inline w-3.5 h-3.5 text-emerald-600 ml-1.5 -mt-0.5" />}
             </span>
             <span className="text-xs text-muted-foreground">{m.count} session{m.count === 1 ? '' : 's'}</span>
-            <span className="font-medium tabular-nums w-20 text-right">{fmt(m.km)}{p.individual ? ` / ${p.memberGoal}` : ''} km</span>
+            <span className="font-medium tabular-nums whitespace-nowrap text-right min-w-[5rem]">{fmt(m.km)}{p.individual ? ` / ${p.memberGoal}` : ''} km</span>
           </div>
           <div className="pl-8">
             <ProgressBar pct={p.individual ? m.pct : (p.totalKm > 0 ? (m.km / p.totalKm) * 100 : 0)} thin />

@@ -243,3 +243,17 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
 - Improve Voice Command reliability
 - Implement browser notification reminders
 - Flesh out Community Challenges UI
+
+
+## Updates - June 2026 (Fitness v2)
+- Live GPS reliability fixes (/fitness/track): Screen Wake Lock while tracking; GPS timeout/unavailable no longer ends session (auto-retry); weak-signal (>50 m) warning; gaps >20 s bridged with straight line (dashed on map, distance counted); pause no longer counts distance (pause connector dashed, 0 km, excluded from km splits); autosave to localStorage (`fitness_live_draft`) every 5 s + on tab hide, with Resume / Finish & save / Discard banner after reload; Discard button after Stop. Files: lib/liveTracking.js, FitnessTrackPage.jsx, RouteMap.jsx, lib/fitness.js
+- Fitness Challenges (/fitness/challenges): stored as `challenges[]` array on `fitness_teams` doc (team creator creates/deletes; no new Firestore rules needed). Presets (100 km/100 days, 50/30, Team 500/60), goal type each-member vs team-combined, progress bar with on-pace marker, ahead/behind pace, km/day needed, member contribution ranking. Sessions count only if shared with team within window; SaveForm auto-preselects teams with active challenge. Hub shows Challenges CTA + Active challenges section. Files: lib/challenges.js, components/ChallengeCard.jsx, pages/FitnessChallengesPage.jsx
+- Teams now store `memberProfiles.{uid}.name` on create/accept.
+- frontend/yarn.lock now includes leaflet/react-leaflet (was missing -> Vercel frozen-lockfile failure).
+- Testing: iteration_10 — Live GPS 100% pass. Challenges UI blocked in preview by Firestore permission-denied on fitness_teams/fitness_sessions (user must publish /app/firestore.rules in Firebase Console); challenge math unit-verified.
+
+### Backlog (June 2026)
+- P0: User to publish Firestore rules; retest challenges end-to-end
+- P1: Elevation gain; Lemon Squeezy checkout (blocked on merchant approval)
+- P2: Community to Firestore; voice command reliability
+- P3: Split ConcentrationGamesPage.jsx
