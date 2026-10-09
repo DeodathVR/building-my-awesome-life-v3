@@ -39,6 +39,7 @@ const FitnessTeamsPage = () => {
     await updateDoc(doc(db, 'fitness_teams', team.id), {
       memberIds: arrayUnion(user.uid),
       memberEmails: arrayRemove(user.email.toLowerCase()),
+      [`memberProfiles.${user.uid}`]: { name: user.displayName || user.email },
     });
   };
 
@@ -129,6 +130,7 @@ const CreateTeamForm = ({ user, onClose }) => {
         createdBy: user.uid,
         createdAt: serverTimestamp(),
         memberIds: [user.uid],
+        memberProfiles: { [user.uid]: { name: user.displayName || user.email } },
         memberEmails: emails,
         inviteCode: makeInviteCode(),
       });

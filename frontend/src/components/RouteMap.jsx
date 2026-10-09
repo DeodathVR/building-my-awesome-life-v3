@@ -37,6 +37,7 @@ export const RouteMap = ({ points = [], live = false, height = 260 }) => {
   const positions = cleaned.map((p) => [p.lat, p.lng]);
   const start = positions[0];
   const end = positions[positions.length - 1];
+  const { solid, dashed } = splitSegments(cleaned);
 
   return (
     <div
@@ -57,8 +58,11 @@ export const RouteMap = ({ points = [], live = false, height = 260 }) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="© OpenStreetMap"
         />
-        {positions.length > 1 && (
-          <Polyline positions={positions} pathOptions={{ color: '#0EA36F', weight: 4, opacity: 0.9 }} />
+        {solid.length > 0 && (
+          <Polyline positions={solid} pathOptions={{ color: '#0EA36F', weight: 4, opacity: 0.9 }} />
+        )}
+        {dashed.length > 0 && (
+          <Polyline positions={dashed} pathOptions={{ color: '#0EA36F', weight: 3, opacity: 0.7, dashArray: '6 8' }} />
         )}
         <CircleMarker center={start} radius={6} pathOptions={{ color: '#fff', fillColor: '#0EA36F', fillOpacity: 1, weight: 2 }} />
         <CircleMarker center={end}   radius={6} pathOptions={{ color: '#fff', fillColor: '#E11D48', fillOpacity: 1, weight: 2 }} />
@@ -67,6 +71,25 @@ export const RouteMap = ({ points = [], live = false, height = 260 }) => {
       </MapContainer>
     </div>
   );
+};
+
+// Solid runs of tracked points, plus dashed connectors where GPS gapped or the session was paused.
+const splitSegments = (pts) => {
+  const solid = [];
+  const dashed = [];
+  let run = [[pts[0].lat, pts[0].lng]];
+  for (let i = 1; i < pts.length; i++) {
+    const ll = [pts[i].lat, pts[i].lng];
+    if (pts[i].gap) {
+      if (run.length > 1) solid.push(run);
+      dashed.push([[pts[i - 1].lat, pts[i - 1].lng], ll]);
+      run = [ll];
+    } else {
+      run.push(ll);
+    }
+  }
+  if (run.length > 1) solid.push(run);
+  return { solid, dashed };
 };
 
 // Auto-pan the map to keep the latest GPS point visible during tracking.

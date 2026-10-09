@@ -172,6 +172,7 @@ export function computeKmSplits(path) {
   for (let i = 1; i < path.length; i++) {
     const a = path[i - 1];
     const b = path[i];
+    if (b.gap === 'pause') { boundaryStartTime += (b.t || 0) - (a.t || 0); continue; }
     const segMeters = haversineMeters(a, b);
     if (segMeters <= 0) continue;
 

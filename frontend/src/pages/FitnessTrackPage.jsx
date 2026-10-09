@@ -5,6 +5,7 @@ import {
 } from 'firebase/firestore';
 import {
   Play, Pause, StopCircle, ArrowLeft, Camera, MapPin, Type as TypeIcon, Volume2, VolumeX, AlertCircle,
+  Sun, X, RotateCcw, Trash2, Trophy,
 } from 'lucide-react';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +14,8 @@ import {
   ACTIVITY, classifyActivity, estimateCalories, haversineMeters, formatDuration,
   formatKm, formatPace, detectPersonalBest, compressImageToDataURL,
 } from '../lib/fitness';
+import { loadDraft, saveDraft, clearDraft, useWakeLock } from '../lib/liveTracking';
+import { isChallengeActive } from '../lib/challenges';
 
 const WEIGHT_KEY = 'fitness_weight_kg';
 const AUDIO_KEY = 'fitness_audio_cues';
@@ -62,34 +65,75 @@ const TabButton = ({ active, onClick, children, testId }) => (
 // =============================================================================
 // LIVE GPS TRACKER
 // =============================================================================
+const MAX_ACCURACY_M = 50;   // readings less accurate than this are skipped
+const MAX_SPEED_MS = 50;     // jumps faster than this are GPS noise
+const GAP_SEC = 20;          // silence longer than this = signal gap (bridged, dashed)
+
 const LiveGPS = ({ user, onSaved }) => {
   const [status, setStatus] = useState('idle');      // 'idle' | 'running' | 'paused' | 'stopped'
   const [error, setError] = useState('');
+  const [signal, setSignal] = useState(null);         // { weak, accuracy }
+  const [gapNotice, setGapNotice] = useState('');
   const [distance, setDistance] = useState(0);        // metres
   const [duration, setDuration] = useState(0);        // seconds
-  const [currentSpeed, setCurrentSpeed] = useState(0);// m/s
   const [audioCues, setAudioCues] = useState(() => localStorage.getItem(AUDIO_KEY) !== 'off');
-  const [path, setPath] = useState([]);               // [{lat, lng, t}] – reactive, drives the map
+  const [path, setPath] = useState([]);               // [{lat, lng, t, gap?}]
+  const [currentSpeed, setCurrentSpeed] = useState(0);// m/s
+  const [draft, setDraft] = useState(() => loadDraft());
 
   const watchRef = useRef(null);
   const startRef = useRef(null);
   const pausedElapsedRef = useRef(0);
   const lastKmMilestoneRef = useRef(0);
-  const timerRef = useRef(null);
-  const lastPointRef = useRef(null);   // for distance delta calc without needing a re-read of state
+  const lastPointRef = useRef(null);
+  const statusRef = useRef('idle');
+  const pathRef = useRef([]);
+  const distanceRef = useRef(0);
+  const afterPauseRef = useRef(false);
+  const restartTimerRef = useRef(null);
 
-  // Timer
+  const wakeLock = useWakeLock(status === 'running');
+
+  const changeStatus = (s) => { statusRef.current = s; setStatus(s); };
+
+  const elapsedNow = () =>
+    pausedElapsedRef.current + (statusRef.current === 'running' ? (Date.now() - startRef.current) / 1000 : 0);
+
+  const persist = () => {
+    if (statusRef.current === 'idle') return;
+    saveDraft({
+      path: pathRef.current,
+      distance: distanceRef.current,
+      elapsed: elapsedNow(),
+      status: statusRef.current,
+    });
+  };
+
+  // Timer + autosave every 5s
   useEffect(() => {
-    if (status !== 'running') {
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
-    timerRef.current = setInterval(() => {
-      const elapsed = pausedElapsedRef.current + (Date.now() - startRef.current) / 1000;
-      setDuration(elapsed);
-    }, 500);
-    return () => clearInterval(timerRef.current);
-  }, [status]);
+    if (status === 'idle') return undefined;
+    persist();
+    if (status === 'stopped') return undefined;
+    const tick = setInterval(() => setDuration(elapsedNow()), 500);
+    const save = setInterval(persist, 5000);
+    return () => { clearInterval(tick); clearInterval(save); };
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save when the tab hides; restart GPS when it comes back
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') persist();
+      else if (statusRef.current === 'running' || statusRef.current === 'paused') startWatch();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', persist);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', persist);
+      persist();
+      stopWatch();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Milestone chime every km
   useEffect(() => {
@@ -100,77 +144,162 @@ const LiveGPS = ({ user, onSaved }) => {
     }
   }, [distance, audioCues]);
 
-  const start = () => {
-    setError('');
-    if (!('geolocation' in navigator)) {
-      setError('This browser does not support GPS. Use manual entry instead.');
+  const addPoint = (p, metres) => {
+    pathRef.current = [...pathRef.current, p];
+    distanceRef.current += metres;
+    lastPointRef.current = p;
+    setPath(pathRef.current);
+    setDistance(distanceRef.current);
+  };
+
+  const onPosition = (pos) => {
+    if (statusRef.current !== 'running') return;
+    const accuracy = pos.coords.accuracy || 0;
+    setCurrentSpeed(Number.isFinite(pos.coords.speed) ? pos.coords.speed : 0);
+    if (accuracy > MAX_ACCURACY_M) {
+      setSignal({ weak: true, accuracy });
       return;
     }
-    setPath([]);
-    lastPointRef.current = null;
-    setDistance(0);
-    setDuration(0);
-    pausedElapsedRef.current = 0;
-    lastKmMilestoneRef.current = 0;
-    startRef.current = Date.now();
-    setStatus('running');
+    setSignal({ weak: false, accuracy });
+    setError('');
+    const p = { lat: pos.coords.latitude, lng: pos.coords.longitude, t: Date.now() };
+    const last = lastPointRef.current;
+    if (!last) { addPoint(p, 0); return; }
+    if (afterPauseRef.current) {
+      afterPauseRef.current = false;
+      addPoint({ ...p, gap: 'pause' }, 0);
+      return;
+    }
+    const dt = (p.t - last.t) / 1000;
+    const d = haversineMeters(last, p);
+    if (d > MAX_SPEED_MS * (dt + 1)) return;
+    if (dt > GAP_SEC) {
+      setGapNotice(`GPS was interrupted for ${formatDuration(dt)}. That stretch was bridged with a straight line (dashed on the map).`);
+      addPoint({ ...p, gap: 'signal' }, d);
+      return;
+    }
+    addPoint(p, d);
+  };
+
+  const onGeoError = (err) => {
+    if (err.code === 1) {
+      setError('Location permission was denied. Allow location access for this site and try again.');
+      stopWatch();
+      if (pathRef.current.length === 0) changeStatus('idle');
+      else pause();
+      return;
+    }
+    // Timeout / position unavailable: keep the session alive and retry.
+    setSignal({ weak: true, accuracy: null });
+    stopWatch();
+    clearTimeout(restartTimerRef.current);
+    restartTimerRef.current = setTimeout(() => {
+      if (statusRef.current === 'running' || statusRef.current === 'paused') startWatch();
+    }, 2000);
+  };
+
+  const startWatch = () => {
+    stopWatch();
     watchRef.current = navigator.geolocation.watchPosition(
-      (pos) => {
-        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude, t: Date.now() };
-        setCurrentSpeed(pos.coords.speed || 0);
-        const last = lastPointRef.current;
-        if (last) {
-          const d = haversineMeters(last, p);
-          // Filter noise: ignore jumps larger than 50m/s or accuracy > 40m
-          if (d < 50 * ((p.t - last.t) / 1000 + 1) && (pos.coords.accuracy || 0) < 50) {
-            setDistance((prev) => prev + d);
-            lastPointRef.current = p;
-            setPath((prev) => [...prev, p]);
-          }
-        } else {
-          lastPointRef.current = p;
-          setPath((prev) => [...prev, p]);
-        }
-      },
-      (err) => {
-        setError(`GPS error: ${err.message}. Grant location permission and try again.`);
-        stopWatch();
-        setStatus('idle');
-      },
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 },
+      onPosition, onGeoError,
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 },
     );
-    if (audioCues) speak('Session started. Go.');
-  };
-
-  const pause = () => {
-    if (status !== 'running') return;
-    pausedElapsedRef.current += (Date.now() - startRef.current) / 1000;
-    setStatus('paused');
-    if (audioCues) speak('Paused.');
-  };
-
-  const resume = () => {
-    if (status !== 'paused') return;
-    startRef.current = Date.now();
-    setStatus('running');
-    if (audioCues) speak('Resumed.');
   };
 
   const stopWatch = () => {
+    clearTimeout(restartTimerRef.current);
     if (watchRef.current != null) {
       navigator.geolocation.clearWatch(watchRef.current);
       watchRef.current = null;
     }
   };
 
+  const resetSession = () => {
+    pathRef.current = [];
+    distanceRef.current = 0;
+    lastPointRef.current = null;
+    afterPauseRef.current = false;
+    pausedElapsedRef.current = 0;
+    lastKmMilestoneRef.current = 0;
+    setPath([]);
+    setDistance(0);
+    setDuration(0);
+    setSignal(null);
+    setGapNotice('');
+    setError('');
+  };
+
+  const start = () => {
+    setError('');
+    if (!('geolocation' in navigator)) {
+      setError('This browser does not support GPS. Use manual entry instead.');
+      return;
+    }
+    clearDraft();
+    setDraft(null);
+    resetSession();
+    startRef.current = Date.now();
+    changeStatus('running');
+    startWatch();
+    if (audioCues) speak('Session started. Go.');
+  };
+
+  const pause = () => {
+    if (statusRef.current !== 'running') return;
+    pausedElapsedRef.current += (Date.now() - startRef.current) / 1000;
+    afterPauseRef.current = true;
+    changeStatus('paused');
+    if (audioCues) speak('Paused.');
+  };
+
+  const resume = () => {
+    if (statusRef.current !== 'paused') return;
+    startRef.current = Date.now();
+    changeStatus('running');
+    if (watchRef.current == null) startWatch();
+    if (audioCues) speak('Resumed.');
+  };
+
   const stop = () => {
-    if (status === 'running') {
+    if (statusRef.current === 'running') {
       pausedElapsedRef.current += (Date.now() - startRef.current) / 1000;
     }
     setDuration(pausedElapsedRef.current);
     stopWatch();
-    setStatus('stopped');
+    changeStatus('stopped');
     if (audioCues) speak('Session complete.');
+  };
+
+  const discard = () => {
+    stopWatch();
+    clearDraft();
+    resetSession();
+    changeStatus('idle');
+  };
+
+  // Restore an unfinished session saved before a reload / tab kill.
+  const restoreDraft = (finish) => {
+    const d = draft;
+    setDraft(null);
+    resetSession();
+    pathRef.current = d.path;
+    distanceRef.current = d.distance || 0;
+    lastPointRef.current = d.path[d.path.length - 1] || null;
+    lastKmMilestoneRef.current = Math.floor(distanceRef.current / 1000);
+    const wasRunning = d.status === 'running';
+    pausedElapsedRef.current = (d.elapsed || 0) + (wasRunning && !finish ? (Date.now() - d.savedAt) / 1000 : 0);
+    setPath(d.path);
+    setDistance(distanceRef.current);
+    setDuration(pausedElapsedRef.current);
+    if (finish || d.status === 'stopped') { changeStatus('stopped'); return; }
+    if (wasRunning) {
+      startRef.current = Date.now();
+      changeStatus('running');
+    } else {
+      afterPauseRef.current = true;
+      changeStatus('paused');
+    }
+    startWatch();
   };
 
   const distanceKm = distance / 1000;
@@ -185,6 +314,10 @@ const LiveGPS = ({ user, onSaved }) => {
 
   return (
     <div className="space-y-4" data-testid="live-gps">
+      {draft && status === 'idle' && (
+        <DraftBanner draft={draft} onResume={() => restoreDraft(false)} onFinish={() => restoreDraft(true)} onDiscard={() => { clearDraft(); setDraft(null); }} />
+      )}
+
       {/* Live stats */}
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="text-center">
@@ -206,10 +339,45 @@ const LiveGPS = ({ user, onSaved }) => {
             <p className="text-xl font-serif">{ACTIVITY[auto].emoji}</p>
           </div>
         </div>
+        {status === 'running' && signal && !signal.weak && (
+          <p className="text-[11px] text-center text-muted-foreground mt-4" data-testid="gps-accuracy">
+            GPS accuracy ±{Math.round(signal.accuracy)} m{currentSpeed > 0 ? ` · ${(currentSpeed * 3.6).toFixed(1)} km/h` : ''}
+          </p>
+        )}
       </div>
 
       {/* Live path map */}
       <RouteMap points={path} live={status === 'running' || status === 'paused'} height={280} />
+
+      {status === 'running' && signal?.weak && (
+        <Notice tone="amber" testId="gps-weak-warning">
+          {signal.accuracy
+            ? `Weak GPS signal (±${Math.round(signal.accuracy)} m). Readings are skipped until accuracy improves; the gap will be bridged.`
+            : 'Searching for GPS signal… tracking continues and the gap will be bridged once it returns.'}
+        </Notice>
+      )}
+
+      {gapNotice && (status === 'running' || status === 'paused') && (
+        <Notice tone="sky" testId="gps-gap-notice" onClose={() => setGapNotice('')}>{gapNotice}</Notice>
+      )}
+
+      {status === 'running' && (
+        wakeLock === 'on' ? (
+          <p className="text-xs text-emerald-700 flex items-center gap-1.5 justify-center" data-testid="wake-lock-status">
+            <Sun className="w-3.5 h-3.5" /> Screen will stay on while tracking
+          </p>
+        ) : (
+          <Notice tone="amber" testId="wake-lock-status">
+            Keep this screen open and unlocked. Your browser can't keep it awake automatically, and locking the phone pauses GPS.
+          </Notice>
+        )
+      )}
+
+      {status === 'idle' && !draft && (
+        <p className="text-xs text-muted-foreground text-center" data-testid="gps-tip">
+          Tip: web browsers can't track GPS in the background. Keep this page open; we'll keep the screen awake and auto-save as you go.
+        </p>
+      )}
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 p-3 flex gap-2 items-start" data-testid="gps-error">
@@ -247,17 +415,22 @@ const LiveGPS = ({ user, onSaved }) => {
         </div>
       )}
       {status === 'stopped' && (
-        <SaveForm
-          user={user}
-          initial={{
-            mode: 'gps',
-            distanceKm,
-            durationSec: duration,
-            activity: auto,
-            path,
-          }}
-          onSaved={onSaved}
-        />
+        <>
+          <SaveForm
+            user={user}
+            initial={{
+              mode: 'gps',
+              distanceKm,
+              durationSec: duration,
+              activity: auto,
+              path,
+            }}
+            onSaved={() => { clearDraft(); onSaved && onSaved(); }}
+          />
+          <button onClick={discard} className="text-xs text-muted-foreground hover:text-red-600 flex items-center gap-1.5 mx-auto" data-testid="discard-session-btn">
+            <Trash2 className="w-3.5 h-3.5" /> Discard this session
+          </button>
+        </>
       )}
 
       {/* Audio-cue toggle */}
@@ -269,6 +442,43 @@ const LiveGPS = ({ user, onSaved }) => {
         {audioCues ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
         Kilometer voice cues: {audioCues ? 'on' : 'off'}
       </button>
+    </div>
+  );
+};
+
+const NOTICE_TONES = {
+  amber: 'bg-amber-50 border-amber-200 text-amber-900',
+  sky: 'bg-sky-50 border-sky-200 text-sky-900',
+};
+
+const Notice = ({ tone, testId, onClose, children }) => (
+  <div className={`rounded-xl border p-3 flex gap-2 items-start ${NOTICE_TONES[tone]}`} data-testid={testId}>
+    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+    <p className="text-sm flex-1">{children}</p>
+    {onClose && (
+      <button onClick={onClose} className="opacity-60 hover:opacity-100" data-testid={`${testId}-close`} aria-label="Dismiss">
+        <X className="w-4 h-4" />
+      </button>
+    )}
+  </div>
+);
+
+const DraftBanner = ({ draft, onResume, onFinish, onDiscard }) => {
+  const mins = Math.max(0, Math.round((Date.now() - draft.savedAt) / 60000));
+  return (
+    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 space-y-3" data-testid="resume-draft-banner">
+      <div className="flex gap-2 items-start">
+        <RotateCcw className="w-4 h-4 text-emerald-700 mt-0.5 flex-shrink-0" />
+        <p className="text-sm text-emerald-900">
+          Unfinished session found: <strong>{formatKm(draft.distance || 0)}</strong> in {formatDuration(draft.elapsed || 0)},
+          last saved {mins === 0 ? 'just now' : `${mins} min ago`}.
+        </p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <button onClick={onResume} className="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm" data-testid="resume-draft-btn">Resume</button>
+        <button onClick={onFinish} className="py-2 rounded-xl border border-emerald-300 bg-white hover:bg-emerald-100 text-emerald-800 text-sm" data-testid="finish-draft-btn">Finish & save</button>
+        <button onClick={onDiscard} className="py-2 rounded-xl border border-border bg-white hover:bg-red-50 text-muted-foreground text-sm" data-testid="discard-draft-btn">Discard</button>
+      </div>
     </div>
   );
 };
@@ -375,7 +585,9 @@ const SaveForm = ({ user, initial, onSaved, disabled }) => {
           collection(db, 'fitness_teams'),
           where('memberIds', 'array-contains', user.uid),
         ));
-        setTeams(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setTeams(list);
+        setSelectedTeams(list.filter((t) => (t.challenges || []).some(isChallengeActive)).map((t) => t.id));
       } catch (_) {
         // Firestore rules may not yet be deployed — silently show no teams.
         setTeams([]);
@@ -447,8 +659,9 @@ const SaveForm = ({ user, initial, onSaved, disabled }) => {
         personalBest: pb,
         createdAt: serverTimestamp(),
         // Keep only a sampled subset of the path to stay well under the doc limit
-        path: (initial.path || []).filter((_, i, arr) => arr.length < 200 || i % Math.ceil(arr.length / 200) === 0)
-          .map((p) => ({ lat: p.lat, lng: p.lng, t: p.t })),
+        path: (initial.path || [])
+          .filter((p, i, arr) => arr.length < 200 || p.gap || i === arr.length - 1 || i % Math.ceil(arr.length / 200) === 0)
+          .map((p) => (p.gap ? { lat: p.lat, lng: p.lng, t: p.t, gap: p.gap } : { lat: p.lat, lng: p.lng, t: p.t })),
       };
       await addDoc(collection(db, 'fitness_sessions'), doc);
       onSaved && onSaved();
@@ -539,9 +752,14 @@ const SaveForm = ({ user, initial, onSaved, disabled }) => {
                     : 'border-border hover:bg-muted'
                 }`}
                 data-testid={`team-toggle-${t.id}`}
-              >{t.name}</button>
+              >{t.name}{(t.challenges || []).some(isChallengeActive) && <Trophy className="inline w-3 h-3 ml-1.5 -mt-0.5 text-amber-500" />}</button>
             ))}
           </div>
+          {teams.some((t) => selectedTeams.includes(t.id) && (t.challenges || []).some(isChallengeActive)) && (
+            <p className="text-xs text-muted-foreground mt-1.5" data-testid="counts-toward-challenge">
+              Counts toward: {teams.filter((t) => selectedTeams.includes(t.id)).flatMap((t) => (t.challenges || []).filter(isChallengeActive).map((c) => c.name)).join(', ')}
+            </p>
+          )}
         </Field>
       )}
 

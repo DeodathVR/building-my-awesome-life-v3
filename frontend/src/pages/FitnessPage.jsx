@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import {
   collection, query, where, orderBy, onSnapshot,
 } from 'firebase/firestore';
-import { Play, Plus, Users, TrendingUp, Flame, MapPin, Award, ChevronRight } from 'lucide-react';
+import { Play, Plus, Users, TrendingUp, Flame, MapPin, Award, ChevronRight, Trophy } from 'lucide-react';
+import { ChallengeCard } from '../components/ChallengeCard';
+import { listChallenges, isChallengeActive, useTeamSessions } from '../lib/challenges';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { RouteMap } from '../components/RouteMap';
@@ -58,6 +60,9 @@ const FitnessPage = () => {
   const monthly = useMemo(() => weeklyTotals(sessions, 30), [sessions]);
   const bestDistance = useMemo(() => Math.max(0, ...sessions.map((s) => s.distanceKm || 0)), [sessions]);
   const bestDurationSec = useMemo(() => Math.max(0, ...sessions.map((s) => s.durationSec || 0)), [sessions]);
+  const challenges = listChallenges(teams);
+  const activeChallenges = challenges.filter(({ challenge }) => isChallengeActive(challenge));
+  const sessionsByTeam = useTeamSessions([...new Set(activeChallenges.map(({ team }) => team.id))]);
 
   return (
     <div className="min-h-screen bg-background" data-testid="fitness-page">
@@ -85,7 +90,7 @@ const FitnessPage = () => {
 
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {/* Primary actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link
             to="/fitness/track"
             className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-6 shadow-md hover:shadow-xl transition-all"
@@ -120,7 +125,38 @@ const FitnessPage = () => {
               </div>
             </div>
           </Link>
+          <Link
+            to="/fitness/challenges"
+            className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-600 to-indigo-600 text-white p-6 shadow-md hover:shadow-xl transition-all"
+            data-testid="challenges-cta"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur flex items-center justify-center group-hover:scale-110 transition">
+                <Trophy className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold">
+                  {challenges.length ? `Challenges (${challenges.length})` : 'Start a challenge'}
+                </h3>
+                <p className="text-white/85 text-sm">e.g. 100 km in 100 days</p>
+              </div>
+            </div>
+          </Link>
         </div>
+
+        {activeChallenges.length > 0 && (
+          <section data-testid="active-challenges">
+            <div className="flex items-center gap-2 mb-3">
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <h2 className="text-lg font-serif">Active challenges</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeChallenges.map(({ challenge, team }) => (
+                <ChallengeCard key={`${team.id}-${challenge.id}`} challenge={challenge} team={team} user={user} sessions={sessionsByTeam[team.id] || []} compact />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Weekly / monthly stats */}
         <section>
