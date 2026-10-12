@@ -74,9 +74,9 @@ export const useTeamSessions = (teamIds) => {
   useEffect(() => {
     if (!key) { setByTeam({}); return undefined; }
     const unsubs = key.split(',').map((teamId) => onSnapshot(
-      query(collection(db, 'fitness_sessions'), where('teamIds', 'array-contains', teamId)),
+      collection(db, 'fitness_teams', teamId, 'sessions'),
       (snap) => setByTeam((prev) => ({ ...prev, [teamId]: snap.docs.map((d) => ({ id: d.id, ...d.data() })) })),
-      () => setByTeam((prev) => ({ ...prev, [teamId]: [] })),
+      (err) => { console.error('Loading team sessions failed:', err); setByTeam((prev) => ({ ...prev, [teamId]: [] })); },
     ));
     return () => unsubs.forEach((u) => u());
   }, [key]);
@@ -92,7 +92,7 @@ export const useMyTeams = (user) => {
     return onSnapshot(
       query(collection(db, 'fitness_teams'), where('memberIds', 'array-contains', user.uid)),
       (snap) => { setTeams(snap.docs.map((d) => ({ id: d.id, ...d.data() }))); setLoading(false); },
-      () => { setTeams([]); setLoading(false); },
+      (err) => { console.error('Loading teams failed:', err); setTeams([]); setLoading(false); },
     );
   }, [user]);
   return { teams, loading };

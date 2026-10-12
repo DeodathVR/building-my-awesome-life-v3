@@ -257,3 +257,11 @@ Create a minimalist web app called 'Awesome Life Habits' for tracking and buildi
 - P1: Elevation gain; Lemon Squeezy checkout (blocked on merchant approval)
 - P2: Community to Firestore; voice command reliability
 - P3: Split ConcentrationGamesPage.jsx
+
+## Updates - June 2026 (Teams v2)
+- Root cause "session not saved": it WAS saved; /fitness list query (userId + orderBy) needed composite index, error swallowed. Now client-side sort (sortByStartDesc), no indexes needed.
+- Shareable invite links: /join/:teamId/:code (JoinTeamPage, InviteLinkBox w/ copy + native share). Banner after team creation explaining how to join; invite-by-email message clarifies no email is sent.
+- Bigger Live GPS / Manual entry tabs.
+- Firestore rules restructured (MUST be republished by user): fitness_teams get for any signed-in (invite links), list without `is list` checks, join-by-code update rule; team-shared session summaries now in subcollection fitness_teams/{id}/sessions (members-only read); fitness_sessions now owner-only read (GPS privacy). SaveForm writes summaries via shareWithTeams().
+- vercel.json: Permissions-Policy geolocation=(self) (was blocking GPS on Vercel!), screen-wake-lock=(self); SPA rewrite to /index.html for deep links.
+- Testing iteration_11: save/sort, tabs, team banner/link, join-invalid/already-member PASS. Team list + challenges + fresh-account join pending user rules publish.

@@ -1,0 +1,59 @@
+{
+  "summary": "Frontend-only re-test after user published Firestore rules. PASSED: (1) manual session save (3km/30min) persists and appears newest-first on /fitness; (2) /fitness/track tabs are a full-width 2-col segmented control with emerald ring on active + title/subtitle; switching works; (3) team creation at /fitness/teams succeeds (addDoc works), team-created-banner shows join steps and created-invite-link in format {origin}/join/{teamId}/{6-char code}, created-invite-link-copy shows error toast in headless (clipboard unavailable — acceptable per spec), team-created-close dismisses; (4) /join/{teamId}/WRONG1 shows join-invalid; (5) opening own team's invite URL shows join-already-member with correct join-team-name. BLOCKED (environment / Firestore rules, not code): the team never appears in 'Your teams' after creation — the onSnapshot list query `fitness_teams where memberIds array-contains uid` returns empty (its error callback is swallowed via `() => setMyTeams([])`). Consequently: team cards don't render, so invite-link-{teamId} / invite-more-input-{teamId} / invite-more-btn-{teamId} / invite-more-msg-{teamId} / team-challenges-link-{teamId} cannot be verified; CreateChallengeForm shows the `go-create-team` fallback (ownTeams.length===0) so NO challenge card could be created; contribution math (5 km / 100 km, team-toggle preselect, counts-toward-challenge, /fitness active-challenges section) cannot be verified. Also 'Loading team sessions failed: Missing or insufficient permissions.' logs during the brief moment a team card tries to query fitness_sessions by teamIds — the per-team-sessions list rule is also denied. This is NOT a code regression — the user's rules deployment is incomplete.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "/fitness/teams onSnapshot query (useMyTeams via `where memberIds array-contains uid`)",
+        "issue": "Query is denied by Firestore rules (list rule missing or too strict). addDoc succeeds (team is created, invite URL generated) but the team never shows up in 'Your teams', blocking all downstream team-card features (invite-link box, invite-more, team-challenges-link) and preventing challenge creation (CreateChallengeForm falls back to go-create-team because ownTeams=[]).",
+        "affected_selectors": ["[data-testid=team-card-${teamId}]", "[data-testid=invite-link-${teamId}]", "[data-testid=invite-more-input-${teamId}]", "[data-testid=team-challenges-link-${teamId}]", "[data-testid=challenge-team-select]"]
+      },
+      {
+        "flow": "TeamCard load recent shared sessions (`fitness_sessions where teamIds array-contains teamId`)",
+        "issue": "Returns 'Missing or insufficient permissions.' (console error from FitnessTeamsPage.jsx L220-228). Blocks team leaderboard + recent-shared-sessions sections even when team card is otherwise visible.",
+        "affected_selectors": ["[data-testid=team-card-${teamId}]"]
+      }
+    ],
+    "design_issues": []
+  },
+  "acceptance_criteria_verified": {
+    "manual_save_persists_and_lists_newest_first": "PASS — /fitness/track -> tab-manual -> 3 km / 30 min -> save-session-btn -> redirected to /fitness; two session cards visible with the newly-saved 3km card above the older 2km card.",
+    "bigger_tabs_full_width_2col_emerald_ring_switch": "PASS — grid-cols-2 full width; TabButton renders icon + title + subtitle; active tab has `ring-2 ring-emerald-500`; clicking tab-live/tab-manual toggles the ring correctly.",
+    "create_team_banner_and_invite_link": "PASS — team-created-banner visible after create-team-submit with the 'How teammates join' ordered list; created-invite-link URL matches `{origin}/join/{teamId}/{6-char code}` (e.g. https://mindful-focus-30.preview.emergentagent.com/join/h0hA6hJ8tqpFZVAix9Db/T6ZAVW); created-invite-link-copy fires a sonner toast ('Could not copy. Select the link and copy it manually.' — acceptable per spec since headless clipboard is unavailable); team-created-close dismisses the banner.",
+    "invite_link_box_on_each_team_card": "BLOCKED — team card does not render (list query returns empty, see integration_issue #1).",
+    "invite_more_members_message": "BLOCKED — same reason.",
+    "challenge_create_from_preset": "BLOCKED — CreateChallengeForm shows go-create-team fallback (ownTeams=0).",
+    "challenge_card_subelements": "BLOCKED — no challenge could be created.",
+    "contribution_math_preselect_and_5km_total": "BLOCKED — no challenge to contribute to.",
+    "active_challenges_section_on_/fitness": "BLOCKED — same reason.",
+    "join_invalid_route": "PASS — /join/{validTeamId}/WRONG1 renders [data-testid=join-invalid] with 'Invite link not valid'.",
+    "join_already_member_for_creator": "PASS — opening own team's invite URL renders [data-testid=join-already-member] with correct [data-testid=join-team-name].",
+    "join_as_fresh_second_account": "NOT TESTED — per task note, blocked by unpublished join-by-code update rule. Would need a fresh account; skipped to avoid false fail.",
+    "challenge_delete_cleanup": "N/A — nothing to clean up."
+  },
+  "test_report_links": [],
+  "action_items": [
+    "ENVIRONMENT (Firebase Console): Publish the full fitness_teams rule set — the current rules allow addDoc + getDoc but DENY the list query `where memberIds array-contains uid`. The onSnapshot listener in FitnessTeamsPage.jsx (L23-26) and in useMyTeams silently falls back to `[]`, which hides all teams and cascades into: no team cards, no invite-link-{id} box, no challenge creation (CreateChallengeForm sees ownTeams=0 and renders go-create-team), no contribution preselect, no active-challenges section on /fitness. Also allow list on fitness_sessions `where teamIds array-contains teamId` for team members (used by TeamCard L219-229 and useTeamSessions in challenges.js).",
+    "After rules are published, re-run: (a) create team -> verify team card renders with invite-link-{teamId} box; (b) invite-more flow -> verify invite-more-msg-{teamId}; (c) create '100 km in 100 days' preset challenge -> verify challenge-{id}-card/-status/-total/-pct/-members; (d) log 5 km manual session dated today -> verify team-toggle-{teamId} preselected + counts-toward-challenge text; (e) /fitness/challenges total = 5.0/100 km; (f) /fitness active-challenges section + challenge-{id}-open; (g) /join from a fresh 2nd account.",
+    "OPTIONAL code hardening (NOT required): FitnessTeamsPage.jsx L23-26 and L31-37 swallow onSnapshot errors with `() => setMyTeams([])` / `setPendingInvites([])`. Consider surfacing a one-line amber Notice when the error is `permission-denied` in dev mode so this failure mode isn't invisible next time (same silent-catch pattern exists in FitnessTrackPage.jsx L597-600 for team load inside SaveForm)."
+  ],
+  "critical_code_review_comments": [
+    "FitnessTeamsPage.jsx L23-27 + L31-38: silent empty-fallback on onSnapshot errors makes Firestore rules deployment failures invisible to the user. The team appears to 'disappear' after creation. Consider at least `console.error` the snapshot error.",
+    "InviteLinkBox.jsx L22: `navigator.share` call is not awaited and no feature detection error UI; the toast on copy() correctly handles the error case though.",
+    "JoinTeamPage.jsx L30: effect depends on `user.uid` but doesn't guard against `user === null`; if an unauthenticated user hits /join/... directly, this will throw before the ProtectedRoute wrapper has had a chance to redirect. Confirmed not triggered in current flow because the route is behind auth, but still worth a defensive `if (!user) return;`.",
+    "FitnessChallengesPage.jsx L23: `useTeamSessions([...new Set(items.map((i) => i.team.id))])` — if items is empty on first render the hook likely subscribes to no teams, OK. Verify useTeamSessions is memoized so the Set identity change doesn't thrash subscriptions.",
+    "Positive: client-side sort for /fitness list (via sortByStartDesc) correctly avoids the composite-index requirement — verified end-to-end: newly saved 3km session appears above older 2km session."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (skipped as requested)",
+    "frontend": "Testable items: 6/6 passing (manual save+sort, bigger tabs, create-team banner, invite URL format + copy toast + close, join-invalid, join-already-member). Blocked items: 6 (team card, invite-more, challenge create/card, contribution preselect+math, active-challenges on /fitness, fresh-account join) — all gated on the same unpublished list rule for fitness_teams."
+  },
+  "test_credentials": "qa-cinema-ehwcjy7y@example.com / testpass123 (from /app/memory/test_credentials.md).",
+  "seed_data_creation": "Created team 'TEST Office Walkers 439' at /fitness/teams (teamId=h0hA6hJ8tqpFZVAix9Db, inviteCode=T6ZAVW, invited someone@example.com). Also saved one TEST manual session (3 km / 30 min walk) on the QA account. Leaving them in place per task note 'Leave test teams; delete test challenges.' No test challenges were created (blocked).",
+  "retest_needed": true,
+  "main_agent_can_self_test": false,
+  "context_for_next_testing_agent": "User still needs to publish the fitness_teams list rule for `where memberIds array-contains uid` and the fitness_sessions list rule for `where teamIds array-contains teamId`. Everything that doesn't require a team card now works (manual save sorts client-side; create-team banner + invite URL + join-invalid + already-member all pass). The pre-created test team is at /join/h0hA6hJ8tqpFZVAix9Db/T6ZAVW — useful fixture once rules allow listing. The invite-URL format regex and copy-toast fallback behavior are verified.",
+  "rca of the issue": "Firestore rules for fitness_teams allow create and get-by-id but DO NOT allow the list query `where memberIds array-contains request.auth.uid`. Reproduce: login as QA, /fitness/teams -> Create team 'X' -> submit (succeeds, invite URL generated, banner shown). Reload /fitness/teams -> 'You aren't on a team yet.' Also console shows 'Loading team sessions failed: Missing or insufficient permissions.' because fitness_sessions list by teamIds is likewise denied. Mitigation (user action, no code change): publish the full /app/firestore.rules — specifically add `allow list: if request.auth != null && request.auth.uid in resource.data.memberIds` (or equivalent per Firestore's array-contains rule syntax: `allow list: if request.auth != null` scoped by the query, with a `where` guard). Same pattern for fitness_sessions list by teamIds array."
+}

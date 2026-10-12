@@ -23,7 +23,7 @@ const FitnessTeamsPage = () => {
     if (!user) return;
     const q = query(collection(db, 'fitness_teams'), where('memberIds', 'array-contains', user.uid));
     return onSnapshot(q, (snap) => setMyTeams(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-      () => setMyTeams([]));
+      (err) => { console.error('Loading teams failed:', err); setMyTeams([]); });
   }, [user]);
 
   // Live: teams that invited my email but I haven't accepted yet
@@ -34,7 +34,7 @@ const FitnessTeamsPage = () => {
       setPendingInvites(snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
         .filter((t) => !(t.memberIds || []).includes(user.uid)));
-    }, () => setPendingInvites([]));
+    }, (err) => { console.error('Loading invites failed:', err); setPendingInvites([]); });
   }, [user]);
 
   const acceptInvite = async (team) => {
@@ -218,10 +218,7 @@ const TeamCard = ({ team, user }) => {
     // Load recent sessions shared with this team
     (async () => {
       try {
-        const snap = await getDocs(query(
-          collection(db, 'fitness_sessions'),
-          where('teamIds', 'array-contains', team.id),
-        ));
+        const snap = await getDocs(collection(db, 'fitness_teams', team.id, 'sessions'));
         setSessions(sortByStartDesc(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
       } catch (err) {
         console.error('Loading team sessions failed:', err);

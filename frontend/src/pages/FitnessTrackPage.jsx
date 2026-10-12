@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  collection, addDoc, getDocs, query, where, serverTimestamp, Timestamp,
+  collection, addDoc, getDocs, query, where, serverTimestamp, Timestamp, setDoc, doc as docRef,
 } from 'firebase/firestore';
+import { toast } from 'sonner';
 import {
   Play, Pause, StopCircle, ArrowLeft, Camera, MapPin, Type as TypeIcon, Volume2, VolumeX, AlertCircle,
   Sun, X, RotateCcw, Trash2, Trophy,
@@ -570,6 +571,24 @@ const Field = ({ label, children }) => (
   </div>
 );
 
+// Copy a GPS-free summary into each selected team's sessions subcollection.
+const shareWithTeams = async (sessionId, s) => {
+  const summary = {
+    userId: s.userId, userName: s.userName, userPhotoURL: s.userPhotoURL, name: s.name,
+    activity: s.activity, mode: s.mode, distanceKm: s.distanceKm, durationSec: s.durationSec,
+    avgPaceMinPerKm: s.avgPaceMinPerKm, calories: s.calories, startedAt: s.startedAt,
+    personalBest: s.personalBest, createdAt: s.createdAt,
+  };
+  const results = await Promise.allSettled(
+    s.teamIds.map((tid) => setDoc(docRef(db, 'fitness_teams', tid, 'sessions', sessionId), summary)),
+  );
+  const failed = results.filter((r) => r.status === 'rejected');
+  if (failed.length) {
+    console.error('Sharing with teams failed:', failed.map((r) => r.reason));
+    toast.error('Session saved, but sharing with your team failed. Check that the latest Firestore rules are published.');
+  }
+};
+
 // =============================================================================
 // SAVE FORM — weight, photos, notes, teams, save button
 // =============================================================================
@@ -669,7 +688,8 @@ const SaveForm = ({ user, initial, onSaved, disabled }) => {
           .filter((p, i, arr) => arr.length < 200 || p.gap || i === arr.length - 1 || i % Math.ceil(arr.length / 200) === 0)
           .map((p) => (p.gap ? { lat: p.lat, lng: p.lng, t: p.t, gap: p.gap } : { lat: p.lat, lng: p.lng, t: p.t })),
       };
-      await addDoc(collection(db, 'fitness_sessions'), doc);
+      const ref = await addDoc(collection(db, 'fitness_sessions'), doc);
+      await shareWithTeams(ref.id, doc);
       onSaved && onSaved();
     } catch (err) {
       setErrorMsg(err?.message || 'Could not save the session. Please try again.');

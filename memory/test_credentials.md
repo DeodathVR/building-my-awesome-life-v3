@@ -33,3 +33,7 @@
 ## Deployment Notes
 - Firestore rules MUST be manually published in Firebase Console — they don't auto-deploy from /app/firestore.rules
 - See /app/FIRESTORE_RULES_DEPLOYMENT.md for step-by-step instructions
+
+## Fitness notes (June 2026)
+- Team invite link format: {origin}/join/{teamId}/{inviteCode}
+- Team-shared sessions live in fitness_teams/{teamId}/sessions (requires latest /app/firestore.rules published)
