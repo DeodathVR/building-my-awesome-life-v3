@@ -269,3 +269,6 @@ export function makeInviteCode() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
+
+const startMs = (s) => (s.startedAt?.toMillis ? s.startedAt.toMillis() : new Date(s.startedAt || 0).getTime());
+export const sortByStartDesc = (sessions) => [...sessions].sort((a, b) => startMs(b) - startMs(a));

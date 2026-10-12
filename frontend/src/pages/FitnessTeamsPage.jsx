@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  collection, addDoc, doc, updateDoc, getDocs, query, where, orderBy, onSnapshot,
+  collection, addDoc, doc, updateDoc, getDocs, query, where, onSnapshot,
   serverTimestamp, arrayUnion, arrayRemove,
 } from 'firebase/firestore';
-import { ArrowLeft, Users, Plus, Mail, X, Trophy, MapPin } from 'lucide-react';
+import { ArrowLeft, Users, Plus, Mail, X, Trophy, MapPin, CheckCircle2 } from 'lucide-react';
+import { InviteLinkBox } from '../components/InviteLinkBox';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { ACTIVITY, formatDuration, weeklyTotals, makeInviteCode } from '../lib/fitness';
+import { ACTIVITY, formatDuration, makeInviteCode, sortByStartDesc } from '../lib/fitness';
 
 const FitnessTeamsPage = () => {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ const FitnessTeamsPage = () => {
   const [myTeams, setMyTeams] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [justCreated, setJustCreated] = useState(null);
 
   // Live: teams I'm a member of
   useEffect(() => {
@@ -88,8 +90,10 @@ const FitnessTeamsPage = () => {
         )}
 
         {showCreate && (
-          <CreateTeamForm user={user} onClose={() => setShowCreate(false)} />
+          <CreateTeamForm user={user} onClose={() => setShowCreate(false)} onCreated={(t) => { setShowCreate(false); setJustCreated(t); }} />
         )}
+
+        {justCreated && <CreatedBanner team={justCreated} onClose={() => setJustCreated(null)} />}
 
         <section>
           <h2 className="text-lg font-serif mb-3">Your teams</h2>
@@ -109,7 +113,7 @@ const FitnessTeamsPage = () => {
 };
 
 // =============================================================================
-const CreateTeamForm = ({ user, onClose }) => {
+const CreateTeamForm = ({ user, onClose, onCreated }) => {
   const [name, setName] = useState('');
   const [emailsRaw, setEmailsRaw] = useState('');
   const [saving, setSaving] = useState(false);
@@ -125,16 +129,17 @@ const CreateTeamForm = ({ user, onClose }) => {
         .split(/[,\s\n]+/)
         .map((e) => e.trim().toLowerCase())
         .filter((e) => /.+@.+\..+/.test(e));
-      await addDoc(collection(db, 'fitness_teams'), {
+      const inviteCode = makeInviteCode();
+      const ref = await addDoc(collection(db, 'fitness_teams'), {
         name: trimmed,
         createdBy: user.uid,
         createdAt: serverTimestamp(),
         memberIds: [user.uid],
         memberProfiles: { [user.uid]: { name: user.displayName || user.email } },
         memberEmails: emails,
-        inviteCode: makeInviteCode(),
+        inviteCode,
       });
-      onClose();
+      onCreated({ id: ref.id, name: trimmed, inviteCode, invitedEmails: emails });
     } catch (e) {
       setErr(e?.message || 'Could not create the team.');
     } finally {
@@ -168,7 +173,7 @@ const CreateTeamForm = ({ user, onClose }) => {
           data-testid="team-invites-input"
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Invitees will see a "pending invite" on their Teams page when they sign in with the same email.
+          No email is sent. Invitees see a "Pending invite" on their Teams page when they sign in with this email. After creating, you'll get a shareable invite link, which is the quickest way.
         </p>
       </div>
       {err && <p className="text-sm text-red-600">{err}</p>}
@@ -186,9 +191,27 @@ const CreateTeamForm = ({ user, onClose }) => {
 };
 
 // =============================================================================
+const CreatedBanner = ({ team, onClose }) => (
+  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 mb-6 space-y-3" data-testid="team-created-banner">
+    <div className="flex items-start justify-between gap-3">
+      <p className="font-medium text-emerald-900 flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-600" /> "{team.name}" is ready!</p>
+      <button onClick={onClose} className="text-emerald-700" data-testid="team-created-close" aria-label="Dismiss"><X className="w-4 h-4" /></button>
+    </div>
+    <p className="text-sm text-emerald-900">How teammates join:</p>
+    <ol className="text-sm text-emerald-900 list-decimal pl-5 space-y-1">
+      <li>Copy the invite link below and send it via WhatsApp, Slack, Teams or email.</li>
+      <li>They open it, sign in or create a free account, and tap <strong>Join team</strong>.</li>
+      {team.invitedEmails?.length > 0 && <li>People you added by email ({team.invitedEmails.join(', ')}) can also find a "Pending invite" on their Teams page. No email is sent automatically.</li>}
+    </ol>
+    <InviteLinkBox teamId={team.id} code={team.inviteCode} testId="created-invite-link" />
+  </div>
+);
+
+// =============================================================================
 const TeamCard = ({ team, user }) => {
   const [sessions, setSessions] = useState([]);
   const [inviteMore, setInviteMore] = useState('');
+  const [inviteMsg, setInviteMsg] = useState('');
   const isCreator = team.createdBy === user.uid;
 
   useEffect(() => {
@@ -198,10 +221,10 @@ const TeamCard = ({ team, user }) => {
         const snap = await getDocs(query(
           collection(db, 'fitness_sessions'),
           where('teamIds', 'array-contains', team.id),
-          orderBy('startedAt', 'desc'),
         ));
-        setSessions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      } catch (_) {
+        setSessions(sortByStartDesc(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+      } catch (err) {
+        console.error('Loading team sessions failed:', err);
         setSessions([]);
       }
     })();
@@ -228,6 +251,7 @@ const TeamCard = ({ team, user }) => {
       memberEmails: arrayUnion(...emails),
     });
     setInviteMore('');
+    setInviteMsg(`Added ${emails.join(', ')}. No email is sent: they'll see a "Pending invite" on their Teams page once they sign in with that address. For the fastest join, send them the invite link above.`);
   };
 
   return (
@@ -241,14 +265,19 @@ const TeamCard = ({ team, user }) => {
               {(team.memberEmails || []).length > 0 && ` · ${team.memberEmails.length} pending`}
             </p>
           </div>
-          {isCreator && team.inviteCode && (
-            <div className="text-right">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Invite code</p>
-              <p className="font-mono text-sm">{team.inviteCode}</p>
-            </div>
+          {(team.challenges || []).length > 0 && (
+            <a href="/fitness/challenges" className="text-xs text-emerald-700 hover:underline flex items-center gap-1" data-testid={`team-challenges-link-${team.id}`}>
+              <Trophy className="w-3.5 h-3.5 text-amber-500" /> {team.challenges.length} challenge{team.challenges.length === 1 ? '' : 's'}
+            </a>
           )}
         </div>
       </div>
+
+      {team.inviteCode && (
+        <div className="border-t border-border px-5 py-4">
+          <InviteLinkBox teamId={team.id} code={team.inviteCode} testId={`invite-link-${team.id}`} />
+        </div>
+      )}
 
       {/* Leaderboard */}
       <div className="border-t border-border px-5 py-4">
@@ -305,6 +334,9 @@ const TeamCard = ({ team, user }) => {
               data-testid={`invite-more-btn-${team.id}`}
             >Add</button>
           </div>
+          {inviteMsg && (
+            <p className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mt-2" data-testid={`invite-more-msg-${team.id}`}>{inviteMsg}</p>
+          )}
         </div>
       )}
     </div>

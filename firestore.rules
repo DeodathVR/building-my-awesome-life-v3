@@ -126,6 +126,8 @@ service cloud.firestore {
                     (isSignedIn() && resource.data.memberEmails is list &&
                      request.auth.token.email != null &&
                      request.auth.token.email.lower() in resource.data.memberEmails);
+      // Invite links: any signed-in user can open a single team doc by its ID
+      allow get: if isSignedIn();
       allow create: if isSignedIn() &&
                       request.resource.data.createdBy == request.auth.uid &&
                       request.resource.data.memberIds is list &&
@@ -136,7 +138,14 @@ service cloud.firestore {
                       (isSignedIn() && resource.data.createdBy == request.auth.uid) ||
                       (isSignedIn() && resource.data.memberEmails is list &&
                        request.auth.token.email != null &&
-                       request.auth.token.email.lower() in resource.data.memberEmails);
+                       request.auth.token.email.lower() in resource.data.memberEmails) ||
+                      // Join via invite link: user adds only themselves and proves the invite code
+                      (isSignedIn() &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds', 'memberProfiles', 'joinCode']) &&
+                       request.resource.data.joinCode == resource.data.inviteCode &&
+                       request.auth.uid in request.resource.data.memberIds &&
+                       request.resource.data.memberIds.hasAll(resource.data.memberIds) &&
+                       request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1);
       allow delete: if isAdmin() ||
                       (isSignedIn() && resource.data.createdBy == request.auth.uid);
     }

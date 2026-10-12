@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  collection, query, where, orderBy, onSnapshot,
+  collection, query, where, onSnapshot,
 } from 'firebase/firestore';
 import { Play, Plus, Users, TrendingUp, Flame, MapPin, Award, ChevronRight, Trophy } from 'lucide-react';
 import { ChallengeCard } from '../components/ChallengeCard';
@@ -18,6 +18,7 @@ import {
   formatPace,
   weeklyTotals,
   pickQuoteOfDay,
+  sortByStartDesc,
 } from '../lib/fitness';
 
 // -----------------------------------------------------------------------------
@@ -34,12 +35,11 @@ const FitnessPage = () => {
     const q = query(
       collection(db, 'fitness_sessions'),
       where('userId', '==', user.uid),
-      orderBy('startedAt', 'desc'),
     );
     const unsub = onSnapshot(q, (snap) => {
-      setSessions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setSessions(sortByStartDesc(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
       setLoading(false);
-    }, () => { setSessions([]); setLoading(false); });
+    }, (err) => { console.error('Loading fitness sessions failed:', err); setSessions([]); setLoading(false); });
     return unsub;
   }, [user]);
 

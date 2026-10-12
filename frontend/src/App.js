@@ -20,6 +20,7 @@ import FitnessPage from "./pages/FitnessPage";
 import FitnessTrackPage from "./pages/FitnessTrackPage";
 import FitnessTeamsPage from "./pages/FitnessTeamsPage";
 import FitnessChallengesPage from "./pages/FitnessChallengesPage";
+import JoinTeamPage from "./pages/JoinTeamPage";
 import AwesomeFeedPage from "./pages/AwesomeFeedPage";
 import SuccessConspiracyPage from "./pages/SuccessConspiracyPage";
 import ConcentrationGamesPage from "./pages/ConcentrationGamesPage";
@@ -88,6 +89,7 @@ function App() {
             <Route path="/fitness" element={<ProtectedRoute><AuthedLayout><FitnessPage /></AuthedLayout></ProtectedRoute>} />
             <Route path="/fitness/track" element={<ProtectedRoute><AuthedLayout><FitnessTrackPage /></AuthedLayout></ProtectedRoute>} />
             <Route path="/fitness/teams" element={<ProtectedRoute><AuthedLayout><FitnessTeamsPage /></AuthedLayout></ProtectedRoute>} />
+            <Route path="/join/:teamId/:code" element={<ProtectedRoute><AuthedLayout><JoinTeamPage /></AuthedLayout></ProtectedRoute>} />
             <Route path="/fitness/challenges" element={<ProtectedRoute><AuthedLayout><FitnessChallengesPage /></AuthedLayout></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><AuthedLayout><AdminPage /></AuthedLayout></AdminRoute>} />
           </Routes>

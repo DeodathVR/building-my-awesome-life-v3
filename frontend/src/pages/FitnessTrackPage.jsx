@@ -38,9 +38,9 @@ const FitnessTrackPage = () => {
 
         <h1 className="text-3xl font-serif mb-6">Log a session</h1>
 
-        <div className="flex gap-2 mb-6 bg-muted/50 p-1 rounded-xl w-fit" role="tablist">
-          <TabButton active={tab === 'live'} onClick={() => setTab('live')} testId="tab-live"><MapPin className="w-4 h-4" />Live GPS</TabButton>
-          <TabButton active={tab === 'manual'} onClick={() => setTab('manual')} testId="tab-manual"><TypeIcon className="w-4 h-4" />Manual entry</TabButton>
+        <div className="grid grid-cols-2 gap-2 mb-6 bg-muted/60 p-1.5 rounded-2xl" role="tablist">
+          <TabButton active={tab === 'live'} onClick={() => setTab('live')} testId="tab-live" icon={MapPin} title="Live GPS" sub="Track as you move" />
+          <TabButton active={tab === 'manual'} onClick={() => setTab('manual')} testId="tab-manual" icon={TypeIcon} title="Manual entry" sub="Type in distance & time" />
         </div>
 
         {tab === 'live'   && <LiveGPS   user={user} onSaved={() => navigate('/fitness')} />}
@@ -50,15 +50,21 @@ const FitnessTrackPage = () => {
   );
 };
 
-const TabButton = ({ active, onClick, children, testId }) => (
+const TabButton = ({ active, onClick, testId, icon: Icon, title, sub }) => (
   <button
     onClick={onClick}
+    role="tab"
+    aria-selected={active}
     data-testid={testId}
-    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition ${
-      active ? 'bg-white shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+    className={`flex items-center gap-3 px-4 py-4 rounded-xl text-left transition-colors ${
+      active ? 'bg-white dark:bg-card shadow-md text-foreground ring-2 ring-emerald-500' : 'text-muted-foreground hover:bg-white/60 hover:text-foreground'
     }`}
   >
-    {children}
+    <Icon className={`w-6 h-6 flex-shrink-0 ${active ? 'text-emerald-600' : ''}`} />
+    <span>
+      <span className="block text-base font-semibold">{title}</span>
+      <span className="block text-xs text-muted-foreground">{sub}</span>
+    </span>
   </button>
 );
 
